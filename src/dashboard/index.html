@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreeDog Gateway · 旺财算力网关控制台</title>
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --card-bg: #121824;
+      --card-hover: #182030;
+      --border-color: #232d42;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent-green: #238636;
+      --accent-green-bright: #2ea043;
+      --accent-blue: #388bfd;
+      --accent-purple: #a371f7;
+      --accent-gold: #d29922;
+      --accent-red: #f85149;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* 顶部导航 */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      font-size: 32px;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(46, 160, 67, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(46, 160, 67, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3fb950;
+      box-shadow: 0 0 8px #3fb950;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-green-bright);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-green);
+    }
+
+    .btn-secondary {
+      background: #21262d;
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: #30363d;
+    }
+
+    /* 指标看板 */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    }
+
+    .metric-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .metric-footer {
+      font-size: 12px;
+      color: var(--accent-green-bright);
+      margin-top: 6px;
+    }
+
+    /* 选项卡导航 */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-blue);
+      border-bottom-color: var(--accent-blue);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* 雷达线路卡片 */
+    .routes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+
+    .route-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 18px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .route-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+
+    .route-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .route-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .score-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(56, 139, 253, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+
+    .route-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .route-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      background: #21262d;
+      color: #c9d1d9;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+
+    /* 日志表格 */
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: #182030;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: var(--card-hover);
+    }
+
+    /* 代码块与指令 */
+    .code-box {
+      background: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #7ee787;
+      margin-top: 10px;
+      position: relative;
+      overflow-x: auto;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      background: #21262d;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      color: var(--text-main);
+      background: #30363d;
+    }
+
+    /* 表单控件 */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 顶部导航 -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🐾</div>
+      <div>
+        <div class="brand-title">FreeDog Gateway 控制台</div>
+        <div class="brand-subtitle">云端雷达自愈型本地算力网关 · v0.1.0</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="gateway-status">网关已就绪: 127.0.0.1:8000</span>
+      </div>
+      <button class="btn btn-secondary" onclick="syncRadarNow()">🔄 刷新雷达</button>
+      <a class="btn btn-secondary" href="https://freeaidog.com" target="_blank">🌐 FreeAI Dog 官网</a>
+    </div>
+  </header>
+
+  <!-- 指标卡片 -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-title">相比官方 Claude 3.7 节省额度</div>
+      <div class="metric-value" id="stat-savings">$0.00</div>
+      <div class="metric-footer">输入 $3/M · 输出 $15/M 纯利节省</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">累计处理 Token 总数</div>
+      <div class="metric-value" id="stat-tokens">0</div>
+      <div class="metric-footer" id="stat-token-breakdown">输入: 0 | 输出: 0</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">网关转发请求总数</div>
+      <div class="metric-value" id="stat-requests">0</div>
+      <div class="metric-footer">Watchdog 拦截与 429 静默重试守护</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">当前首选主力路由</div>
+      <div class="metric-value" style="font-size: 18px; color: var(--accent-blue);" id="stat-route">正在探测...</div>
+      <div class="metric-footer" id="stat-target-model">目标模型: 加载中</div>
+    </div>
+  </div>
+
+  <!-- 选项卡导航 -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('radar')">🛰️ 实时免费模型雷达</button>
+    <button class="tab-btn" onclick="switchTab('ledger')">💰 算力账本细目</button>
+    <button class="tab-btn" onclick="switchTab('logs')">📜 实时请求审计流</button>
+    <button class="tab-btn" onclick="switchTab('launch')">🚀 一键接入与命令</button>
+    <button class="tab-btn" onclick="switchTab('config')">⚙️ 密钥与模型配置</button>
+  </div>
+
+  <!-- Tab 1: 雷达线路 -->
+  <div id="pane-radar" class="tab-pane active">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 16px;">已同步健康线路列表</h3>
+        <p style="font-size: 13px; color: var(--text-muted);">自动规避拥堵通道，按健康分与可用额度实时优选</p>
+      </div>
+      <button class="btn btn-primary" onclick="syncRadarNow()">云端强制同步雷达</button>
+    </div>
+    <div class="routes-grid" id="routes-container">
+      <!-- 动态插入线路卡片 -->
+    </div>
+  </div>
+
+  <!-- Tab 2: 算力账本 -->
+  <div id="pane-ledger" class="tab-pane">
+    <div class="metric-card" style="margin-bottom: 20px;">
+      <h3 style="font-size: 16px; margin-bottom: 12px;">账本统计原理</h3>
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+        FreeDog Gateway 将原本发往 Anthropic 官方 Claude 3.7 Sonnet 的长上下文请求，无缝清洗后路由至免费模型。
+        记账基准公式：<strong>节省额度 = 输入 Tokens × $3.00/M + 输出 Tokens × $15.00/M</strong>。
+      </p>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>统计维度</th>
+            <th>数值</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-table-body">
+          <!-- 动态插入 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 3: 请求日志 -->
+  <div id="pane-logs" class="tab-pane">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 16px;">最近 20 条请求捕获日志</h3>
+      <button class="btn btn-secondary" onclick="loadLogs()">刷新日志</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>请求模型</th>
+            <th>分流目标</th>
+            <th>Tokens</th>
+            <th>本轮节省</th>
+            <th>延迟</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="logs-table-body">
+          <!-- 动态插入日志行 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 4: 一键接入 -->
+  <div id="pane-launch" class="tab-pane">
+    <div class="route-card" style="margin-bottom: 16px;">
+      <h3 style="font-size: 16px; margin-bottom: 8px;">方式一：一键自动托管启动 [推荐]</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">自动注入看门狗拦截参数，并为多 Key 故障转移配置极大超时阈值：</p>
+      <div class="code-box">
+        node bin/freedog.mjs claude
+        <button class="copy-btn" onclick="copyText('node bin/freedog.mjs claude')">复制</button>
+      </div>
+    </div>
+
+    <div class="route-card" style="margin-bottom: 16px;">
+      <h3 style="font-size: 16px; margin-bottom: 8px;">方式二：环境变量手动接管</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">在当前终端导出变量后，正常输入 claude 即可接入网关：</p>
+      <div class="code-box">
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8000"
+export ANTHROPIC_API_KEY="freedog-local-token"
+export CLAUDE_ENABLE_STREAM_WATCHDOG="0"
+export API_TIMEOUT_MS="2147483647"
+claude
+        <button class="copy-btn" onclick="copyText('export ANTHROPIC_BASE_URL=\"http://127.0.0.1:8000\"\nexport ANTHROPIC_API_KEY=\"freedog-local-token\"\nexport CLAUDE_ENABLE_STREAM_WATCHDOG=\"0\"\nexport API_TIMEOUT_MS=\"2147483647\"\nclaude')">复制</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 5: 密钥配置 -->
+  <div id="pane-config" class="tab-pane">
+    <div class="route-card" style="max-width: 600px;">
+      <h3 style="font-size: 16px; margin-bottom: 16px;">自定义上游 API Key 保险箱</h3>
+      <div class="form-group">
+        <label>Google AI Studio API Key [Gemini 2.5 Flash]</label>
+        <input type="password" id="key-gemini" placeholder="AIzaSy...">
+        <div class="form-hint">留空则优先使用系统环境变量 GEMINI_API_KEY</div>
+      </div>
+      <div class="form-group">
+        <label>SiliconFlow 硅基流动 API Key [DeepSeek-V3]</label>
+        <input type="password" id="key-siliconflow" placeholder="sk-...">
+        <div class="form-hint">留空则优先使用系统环境变量 SILICONFLOW_API_KEY</div>
+      </div>
+      <div class="form-group">
+        <label>Groq Cloud API Key [Llama 3.3 70B]</label>
+        <input type="password" id="key-groq" placeholder="gsk_...">
+        <div class="form-hint">留空则优先使用系统环境变量 GROQ_API_KEY</div>
+      </div>
+      <div class="form-group">
+        <label>本地 Ollama 地址 [离线备灾通道]</label>
+        <input type="text" id="url-ollama" placeholder="http://127.0.0.1:11434/v1">
+      </div>
+      <button class="btn btn-primary" onclick="saveConfig()">保存配置至本地保险箱</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+    const btn = event.target;
+    btn.classList.add('active');
+    document.getElementById('pane-' + tabName).classList.add('active');
+
+    if (tabName === 'logs') loadLogs();
+    if (tabName === 'radar') loadRadar();
+    if (tabName === 'ledger') loadStats();
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('已复制到剪贴板！');
+    });
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/health');
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('stat-savings').textContent = '$' + (data.totalSavingsUsd || 0).toFixed(2);
+      document.getElementById('stat-tokens').textContent = (data.totalTokensProcessed || 0).toLocaleString();
+      document.getElementById('stat-route').textContent = data.activeRoute || '未连接';
+      document.getElementById('stat-target-model').textContent = '目标模型: ' + (data.targetModel || '无');
+
+      const statsRes = await fetch('/api/stats');
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        document.getElementById('stat-requests').textContent = stats.requests || 0;
+        document.getElementById('stat-token-breakdown').textContent = 
+          '输入: ' + (stats.inputTokens || 0).toLocaleString() + ' | 输出: ' + (stats.outputTokens || 0).toLocaleString();
+
+        const tbody = document.getElementById('ledger-table-body');
+        tbody.innerHTML = `
+          <tr><td>累计节省金额</td><td style="color: #3fb950; font-weight: bold;">$${stats.savingsUsd} 美元</td><td>对比官方计费纯省下支出</td></tr>
+          <tr><td>输入 Token 吞吐</td><td>${stats.inputTokens.toLocaleString()}</td><td>对应提示词与长文本上下文</td></tr>
+          <tr><td>输出 Token 吞吐</td><td>${stats.outputTokens.toLocaleString()}</td><td>对应模型生成的分析与代码</td></tr>
+          <tr><td>网关守护运行时长</td><td>${stats.uptimeSeconds} 秒</td><td>进程持续运行时间</td></tr>
+        `;
+      }
+    } catch (e) {}
+  }
+
+  async function loadRadar() {
+    try {
+      const res = await fetch('/api/radar');
+      if (!res.ok) return;
+      const data = await res.json();
+      const container = document.getElementById('routes-container');
+      container.innerHTML = '';
+
+      (data.routes || []).forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'route-card';
+        card.innerHTML = `
+          <div class="route-header">
+            <div class="route-name">${r.name}</div>
+            <div class="score-badge">健康分: ${r.healthScore}</div>
+          </div>
+          <div class="route-meta">服务商: ${r.provider} | 模型: ${r.model}</div>
+          <div class="route-meta">上下文窗口: ${(r.contextWindow || 0).toLocaleString()} tokens</div>
+          <div class="route-meta">配额说明: ${r.freeQuota}</div>
+          <div>
+            ${(r.features || []).map(f => `<span class="route-tag">${f}</span>`).join('')}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } catch (e) {}
+  }
+
+  async function syncRadarNow() {
+    try {
+      const res = await fetch('/api/radar/sync', { method: 'POST' });
+      const data = await res.json();
+      alert('雷达已同步！已获取 ' + (data.count || 0) + ' 条最新线路');
+      loadRadar();
+      loadStats();
+    } catch (e) {
+      alert('同步雷达失败，请检查网络连接');
+    }
+  }
+
+  async function loadLogs() {
+    try {
+      const res = await fetch('/api/logs');
+      if (!res.ok) return;
+      const data = await res.json();
+      const tbody = document.getElementById('logs-table-body');
+      tbody.innerHTML = '';
+
+      if (!data.logs || data.logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无请求捕获记录，请先拉起 Claude Code 发起会话</td></tr>';
+        return;
+      }
+
+      data.logs.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${l.timeFormatted}</td>
+          <td>${l.modelRequested}</td>
+          <td>${l.modelRouted}</td>
+          <td>${l.inputTokens + l.outputTokens}</td>
+          <td style="color: #3fb950;">+$${l.savingsUsd.toFixed(4)}</td>
+          <td>${l.latencyMs}ms</td>
+          <td><span style="color: ${l.status === 200 ? '#3fb950' : '#f85149'}">${l.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (e) {}
+  }
+
+  async function saveConfig() {
+    const keys = {
+      Google: document.getElementById('key-gemini').value.trim(),
+      SiliconFlow: document.getElementById('key-siliconflow').value.trim(),
+      Groq: document.getElementById('key-groq').value.trim(),
+      Ollama: document.getElementById('url-ollama').value.trim()
+    };
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(keys)
+      });
+      if (res.ok) {
+        alert('配置已安全保存至本地保险箱！');
+      }
+    } catch (e) {
+      alert('保存配置异常');
+    }
+  }
+
+  // 初始化加载
+  loadStats();
+  loadRadar();
+  setInterval(loadStats, 3000);
+</script>
+
+</body>
+</html>

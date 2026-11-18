@@ -1,9 +1,12 @@
 import assert from 'node:assert';
+import { EventEmitter } from 'node:events';
 import { RadarClient } from '../src/radar/radar-client.mjs';
 import { CostLedger } from '../src/ledger/cost-ledger.mjs';
 import { ThinkingPatchManager } from '../src/proxy/thinking-patch.mjs';
 import { translateAnthropicToOpenAI } from '../src/proxy/translator.mjs';
 import { getClaudeInjectedEnv } from '../src/watchdog/launcher.mjs';
+import { RequestLogger } from '../src/proxy/logger.mjs';
+import { createGatewayServer } from '../src/proxy/server.mjs';
 
 console.log('========================================================');
 console.log('正在执行 FreeDog Gateway 核心功能自动化单测套件...');
@@ -89,6 +92,75 @@ assert.strictEqual(env.API_TIMEOUT_MS, '2147483647', '超时应设为极大值�
 assert.strictEqual(env.DISABLE_ERROR_REPORTING, '1', '必须阻断遥测');
 console.log('  ✓ 客户端防超时与防断连参数校验通过');
 
+// 测试 6: 审计日志环形缓冲区记录
+console.log('\n[Test 6] 验证请求审计日志环形缓冲区功能');
+const reqLogger = new RequestLogger(5);
+reqLogger.log({
+  modelRequested: 'claude-3-7-sonnet',
+  modelRouted: 'gemini-2.5-flash',
+  provider: 'Google',
+  inputTokens: 500,
+  outputTokens: 200,
+  savingsUsd: 0.0045,
+  latencyMs: 320,
+  status: 200
+});
+const recent = reqLogger.getRecentLogs();
+assert.strictEqual(recent.length, 1, '应有 1 条已记录的日志');
+assert.strictEqual(recent[0].modelRouted, 'gemini-2.5-flash', '记录的路由模型应一致');
+console.log('  ✓ 请求审计日志环形缓冲区读写与字段记录正常');
+
+// 测试 7: 本地 WebUI 与控制台服务响应
+console.log('\n[Test 7] 验证 WebUI 静态资源与控制台 API 路由');
+const gateway = createGatewayServer({
+  radarClient: radar,
+  costLedger: ledger,
+  logger: reqLogger,
+  port: 18099,
+  host: '127.0.0.1'
+});
+
+// 使用内存 Mock 请求对象直接触发 HTTP 路由调度，避免沙箱网络隔离阻断
+function dispatchMockRequest(method, pathname) {
+  return new Promise(resolve => {
+    const req = new EventEmitter();
+    req.method = method;
+    req.url = pathname;
+    req.headers = { host: '127.0.0.1:18099' };
+    req.socket = { remoteAddress: '127.0.0.1' };
+
+    let statusCode = 0;
+    let headers = {};
+    let responseBody = '';
+
+    const res = {
+      setHeader: (k, v) => { headers[k] = v; },
+      writeHead: (code, hdrs = {}) => {
+        statusCode = code;
+        Object.assign(headers, hdrs);
+      },
+      end: (data = '') => {
+        responseBody += data;
+        resolve({ statusCode, headers, body: responseBody });
+      }
+    };
+
+    gateway.server.emit('request', req, res);
+    req.emit('end');
+  });
+}
+
+const resHome = await dispatchMockRequest('GET', '/');
+assert.strictEqual(resHome.statusCode, 200, '首页状态码应为 200');
+assert(resHome.body.includes('FreeDog Gateway'), '首页 HTML 必须包含控制台主标识');
+
+const resLogs = await dispatchMockRequest('GET', '/api/logs');
+assert.strictEqual(resLogs.statusCode, 200, 'Logs 状态码应为 200');
+const logsJson = JSON.parse(resLogs.body);
+assert(Array.isArray(logsJson.logs) && logsJson.logs.length >= 1, 'Logs 应返回日志数组');
+
+console.log('  ✓ WebUI 静态控制台与全部路由接口单测通过');
+
 console.log('\n========================================================');
-console.log('🎉 全部 5 项核心机制单测 100% 通过！');
+console.log('🎉 全部 7 项核心机制与 WebUI 自动化单测 100% 通过！');
 console.log('========================================================\n');

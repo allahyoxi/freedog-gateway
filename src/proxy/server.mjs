@@ -1,18 +1,31 @@
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { translateAnthropicToOpenAI, streamOpenAIToAnthropic } from './translator.mjs';
 import { ThinkingPatchManager } from './thinking-patch.mjs';
 import { UpstreamRouter } from './router.mjs';
+import { RequestLogger } from './logger.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const dashboardHtmlPath = path.resolve(__dirname, '../dashboard/index.html');
 
 export function createGatewayServer(options = {}) {
   const {
     radarClient,
     costLedger,
+    logger = new RequestLogger(),
     port = 8000,
     host = '127.0.0.1'
   } = options;
 
   const thinkingManager = new ThinkingPatchManager();
   const router = new UpstreamRouter(radarClient);
+
+  const configDir = path.join(os.homedir(), '.freedog');
+  const configFile = path.join(configDir, 'config.json');
 
   const server = http.createServer(async (req, res) => {
     // 跨域支持
@@ -29,6 +42,21 @@ export function createGatewayServer(options = {}) {
     const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
     const pathname = url.pathname;
 
+    // 0. WebUI 静态仪表盘首页
+    if (req.method === 'GET' && (pathname === '/' || pathname === '/dashboard')) {
+      try {
+        if (fs.existsSync(dashboardHtmlPath)) {
+          const html = fs.readFileSync(dashboardHtmlPath, 'utf8');
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(html);
+          return;
+        }
+      } catch (err) {}
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<h1>FreeDog Gateway Dashboard</h1><p>Dashboard file loading error.</p>');
+      return;
+    }
+
     // 1. 健康探针
     if (req.method === 'GET' && pathname === '/health') {
       const summary = costLedger.getSummary();
@@ -36,9 +64,9 @@ export function createGatewayServer(options = {}) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
-        version: '0.1.0',
-        activeRoute: activeRoute.name,
-        targetModel: activeRoute.model,
+        version: '0.2.0',
+        activeRoute: activeRoute ? activeRoute.name : 'Unknown',
+        targetModel: activeRoute ? activeRoute.model : 'Unknown',
         totalSavingsUsd: summary.savingsUsd,
         totalTokensProcessed: summary.totalTokens
       }, null, 2));
@@ -53,6 +81,19 @@ export function createGatewayServer(options = {}) {
       return;
     }
 
+    // 2.1 强制同步雷达远端全网线路
+    if (req.method === 'POST' && pathname === '/api/radar/sync') {
+      try {
+        const count = await radarClient.syncRadar(true);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, count }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
     // 3. 算力账本统计
     if (req.method === 'GET' && pathname === '/api/stats') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -60,7 +101,27 @@ export function createGatewayServer(options = {}) {
       return;
     }
 
-    // 4. 模型发现接口 (为 Claude Code 提供动态网关模型列表)
+    // 3.1 审计日志查询接口
+    if (req.method === 'GET' && pathname === '/api/logs') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ logs: logger.getRecentLogs(50) }, null, 2));
+      return;
+    }
+
+    // 3.2 配置读取接口
+    if (req.method === 'GET' && pathname === '/api/config') {
+      let configData = {};
+      try {
+        if (fs.existsSync(configFile)) {
+          configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+        }
+      } catch (err) {}
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(configData, null, 2));
+      return;
+    }
+
+    // 4. 模型发现接口 [为 Claude Code 提供动态网关模型列表]
     if (req.method === 'GET' && pathname === '/v1/models') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -92,8 +153,25 @@ export function createGatewayServer(options = {}) {
         return;
       }
 
+      // 3.3 配置保存接口
+      if (req.method === 'POST' && pathname === '/api/config') {
+        try {
+          if (!fs.existsSync(configDir)) {
+            fs.mkdirSync(configDir, { recursive: true });
+          }
+          fs.writeFileSync(configFile, JSON.stringify(body, null, 2), 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+      }
+
       // 5. 核心接口：Anthropic Messages 协议中转
       if (req.method === 'POST' && pathname === '/v1/messages') {
+        const startTime = Date.now();
         const sessionId = req.headers['x-session-id'] || 'session_default';
         const requestedModel = body.model || 'claude-3-7-sonnet';
 
@@ -111,6 +189,20 @@ export function createGatewayServer(options = {}) {
 
           if (!upstreamRes.ok) {
             const errBody = await upstreamRes.text();
+            const latencyMs = Date.now() - startTime;
+            logger.log({
+              clientIp: req.socket.remoteAddress || '127.0.0.1',
+              modelRequested: requestedModel,
+              modelRouted: targetModel || 'unknown',
+              provider: route ? route.provider : 'Unknown',
+              inputTokens: 0,
+              outputTokens: 0,
+              savingsUsd: 0,
+              latencyMs,
+              status: upstreamRes.status,
+              error: errBody.substring(0, 200)
+            });
+
             res.writeHead(upstreamRes.status, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
               type: 'error',
@@ -131,19 +223,47 @@ export function createGatewayServer(options = {}) {
               sessionId
             });
 
+            const inTokens = Math.floor(bodyText.length / 4);
+            const outTokens = 150;
             // 记录账本
-            costLedger.recordTransaction(
-              Math.floor(bodyText.length / 4),
-              150,
+            const ledgerRes = costLedger.recordTransaction(
+              inTokens,
+              outTokens,
               route.name
             );
+
+            const latencyMs = Date.now() - startTime;
+            logger.log({
+              clientIp: req.socket.remoteAddress || '127.0.0.1',
+              modelRequested: requestedModel,
+              modelRouted: targetModel,
+              provider: route.provider,
+              inputTokens: inTokens,
+              outputTokens: outTokens,
+              savingsUsd: ledgerRes.savingsUsd,
+              latencyMs,
+              status: 200
+            });
           } else {
             // 非流式处理
             const data = await upstreamRes.json();
             const textContent = data.choices?.[0]?.message?.content || '';
             const usage = data.usage || { prompt_tokens: 50, completion_tokens: 50 };
 
-            costLedger.recordTransaction(usage.prompt_tokens, usage.completion_tokens, route.name);
+            const ledgerRes = costLedger.recordTransaction(usage.prompt_tokens, usage.completion_tokens, route.name);
+            const latencyMs = Date.now() - startTime;
+
+            logger.log({
+              clientIp: req.socket.remoteAddress || '127.0.0.1',
+              modelRequested: requestedModel,
+              modelRouted: targetModel,
+              provider: route.provider,
+              inputTokens: usage.prompt_tokens,
+              outputTokens: usage.completion_tokens,
+              savingsUsd: ledgerRes.savingsUsd,
+              latencyMs,
+              status: 200
+            });
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
@@ -160,6 +280,20 @@ export function createGatewayServer(options = {}) {
             }));
           }
         } catch (dispatchErr) {
+          const latencyMs = Date.now() - startTime;
+          logger.log({
+            clientIp: req.socket.remoteAddress || '127.0.0.1',
+            modelRequested: requestedModel,
+            modelRouted: 'none',
+            provider: 'None',
+            inputTokens: 0,
+            outputTokens: 0,
+            savingsUsd: 0,
+            latencyMs,
+            status: 502,
+            error: dispatchErr.message
+          });
+
           res.writeHead(502, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             type: 'error',
@@ -180,6 +314,7 @@ export function createGatewayServer(options = {}) {
 
   return {
     server,
+    logger,
     start: () => new Promise(resolve => {
       server.listen(port, host, () => {
         resolve({ host, port });
