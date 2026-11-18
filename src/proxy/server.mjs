@@ -84,7 +84,8 @@ export function createGatewayServer(options = {}) {
     // 2.1 强制同步雷达远端全网线路
     if (req.method === 'POST' && pathname === '/api/radar/sync') {
       try {
-        const count = await radarClient.syncRadar(true);
+        const routes = await radarClient.syncRadar(true);
+        const count = Array.isArray(routes) ? routes.length : 0;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, count }));
       } catch (err) {

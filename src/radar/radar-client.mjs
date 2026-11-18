@@ -62,6 +62,67 @@ const DEFAULT_FALLBACK_ROUTES = [
   }
 ];
 
+// 解析远端上下文 Token 规格字符串
+function parseContextWindow(ctx) {
+  if (typeof ctx === 'number') return ctx;
+  if (!ctx) return 32768;
+  const str = String(ctx).trim().toLowerCase();
+  if (str.endsWith('m')) {
+    const val = parseFloat(str.slice(0, -1));
+    return Math.round(val * 1048576);
+  }
+  if (str.endsWith('k')) {
+    const val = parseFloat(str.slice(0, -1));
+    return Math.round(val * 1024);
+  }
+  const parsed = parseInt(str, 10);
+  return isNaN(parsed) ? 32768 : parsed;
+}
+
+// 规范化远端雷达索引条目，统一映射为网关路由结构
+function normalizeRemoteRoute(item) {
+  if (item.name && item.provider && item.model && item.healthScore) {
+    return item;
+  }
+
+  const vendor = item.vendor || 'AI';
+  const cleanTitle = item.cleanTitle || item.name || 'AI Model';
+  const filterStr = item.filterStr || '';
+
+  // 特性标签提取
+  const feats = [];
+  if (item.isCode || filterStr.includes('coding')) feats.push('coding');
+  if (item.isReasoning) feats.push('thinking');
+  if (item.isVision) feats.push('vision');
+  feats.push('tools');
+  feats.push('streaming');
+
+  // 健康分阶梯计算
+  let score = 90;
+  if (filterStr.includes('tiera')) score = 98;
+  else if (filterStr.includes('tierb')) score = 93;
+  else if (filterStr.includes('tierc')) score = 86;
+
+  let quota = '官方免费层端点 · 免绑卡';
+  if (item.rpm) {
+    quota = `${item.rpm} RPM 官方调用速率上限`;
+  }
+
+  return {
+    id: item.id || `route-${Math.random().toString(36).substring(2, 9)}`,
+    name: `${vendor} · ${cleanTitle}`,
+    provider: vendor,
+    model: cleanTitle,
+    baseUrl: item.baseUrl || 'https://api.openai.com/v1',
+    protocol: item.protocol || 'openai',
+    contextWindow: parseContextWindow(item.context),
+    freeQuota: quota,
+    healthScore: score,
+    status: 'ACTIVE',
+    features: feats
+  };
+}
+
 export class RadarClient {
   constructor(options = {}) {
     this.cacheDir = options.cacheDir || RADAR_CACHE_DIR;
@@ -80,12 +141,13 @@ export class RadarClient {
         const raw = fs.readFileSync(this.cacheFile, 'utf8');
         const data = JSON.parse(raw);
         if (Array.isArray(data.routes) && data.routes.length > 0) {
-          this.routes = data.routes;
+          // 重新标准化加载缓存，确保字段完整
+          this.routes = data.routes.map(normalizeRemoteRoute);
           this.lastSyncTime = data.syncedAt || 0;
         }
       }
     } catch (err) {
-      // 容错使用默认内存线路
+      // 容错回退使用内置默认线路
     }
   }
 
@@ -103,7 +165,7 @@ export class RadarClient {
       const res = await fetch(RADAR_REMOTE_URL, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'FreeDog-Gateway/0.1.0'
+          'User-Agent': 'FreeDog-Gateway/0.2.0'
         }
       });
       clearTimeout(timeoutId);
@@ -111,8 +173,16 @@ export class RadarClient {
       if (res.ok) {
         const remoteData = await res.json();
         if (Array.isArray(remoteData) && remoteData.length > 0) {
-          this.routes = remoteData;
+          // 规范化所有远端路由
+          const normalized = remoteData.map(normalizeRemoteRoute);
+
+          // 保持内置经过实测的编码主力线路排在最前
+          const fallbackIds = new Set(DEFAULT_FALLBACK_ROUTES.map(r => r.id));
+          const extraRoutes = normalized.filter(r => !fallbackIds.has(r.id));
+
+          this.routes = [...DEFAULT_FALLBACK_ROUTES, ...extraRoutes];
           this.lastSyncTime = now;
+
           fs.writeFileSync(
             this.cacheFile,
             JSON.stringify({ syncedAt: now, routes: this.routes }, null, 2),

@@ -597,18 +597,33 @@ claude
       container.innerHTML = '';
 
       (data.routes || []).forEach(r => {
+        const name = r.name || `${r.vendor || 'AI'} · ${r.cleanTitle || '免费模型'}`;
+        const score = r.healthScore !== undefined ? r.healthScore : 92;
+        const provider = r.provider || r.vendor || 'AI';
+        const model = r.model || r.cleanTitle || r.id;
+        let ctxNum = typeof r.contextWindow === 'number' ? r.contextWindow : 0;
+        if (!ctxNum && r.context) {
+          const str = String(r.context).trim().toLowerCase();
+          if (str.endsWith('m')) ctxNum = parseFloat(str) * 1048576;
+          else if (str.endsWith('k')) ctxNum = parseFloat(str) * 1024;
+          else ctxNum = parseInt(str, 10);
+        }
+        if (!ctxNum) ctxNum = 32768;
+        const quota = r.freeQuota || (r.rpm ? `${r.rpm} RPM 官方调用上限` : '官方 0 元调用 · 免绑卡');
+        const feats = Array.isArray(r.features) && r.features.length > 0 ? r.features : ['tools', 'streaming'];
+
         const card = document.createElement('div');
         card.className = 'route-card';
         card.innerHTML = `
           <div class="route-header">
-            <div class="route-name">${r.name}</div>
-            <div class="score-badge">健康分: ${r.healthScore}</div>
+            <div class="route-name">${name}</div>
+            <div class="score-badge">健康分: ${score}</div>
           </div>
-          <div class="route-meta">服务商: ${r.provider} | 模型: ${r.model}</div>
-          <div class="route-meta">上下文窗口: ${(r.contextWindow || 0).toLocaleString()} tokens</div>
-          <div class="route-meta">配额说明: ${r.freeQuota}</div>
+          <div class="route-meta">服务商: ${provider} | 模型: ${model}</div>
+          <div class="route-meta">上下文窗口: ${ctxNum.toLocaleString()} tokens</div>
+          <div class="route-meta">配额说明: ${quota}</div>
           <div>
-            ${(r.features || []).map(f => `<span class="route-tag">${f}</span>`).join('')}
+            ${feats.map(f => `<span class="route-tag">${f}</span>`).join('')}
           </div>
         `;
         container.appendChild(card);
@@ -618,13 +633,19 @@ claude
 
   async function syncRadarNow() {
     try {
+      const btn = document.querySelector('.btn-refresh');
+      if (btn) btn.textContent = '正在同步全网雷达...';
       const res = await fetch('/api/radar/sync', { method: 'POST' });
       const data = await res.json();
-      alert('雷达已同步！已获取 ' + (data.count || 0) + ' 条最新线路');
+      const count = typeof data.count === 'number' ? data.count : (Array.isArray(data.count) ? data.count.length : 0);
+      alert('雷达已同步！已获取 ' + count + ' 条最新线路');
+      if (btn) btn.textContent = '刷新雷达';
       loadRadar();
       loadStats();
     } catch (e) {
       alert('同步雷达失败，请检查网络连接');
+      const btn = document.querySelector('.btn-refresh');
+      if (btn) btn.textContent = '刷新雷达';
     }
   }
 
