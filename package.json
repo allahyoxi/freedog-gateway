@@ -1,7 +1,7 @@
 {
   "name": "freedog-gateway",
-  "version": "0.2.0",
-  "description": "Radar-powered local AI agent proxy connecting Claude Code and Codex to free upstream models with automatic failover and token ledger",
+  "version": "0.3.0",
+  "description": "Provider-driven local AI agent proxy connecting Claude Code and Codex to free upstream models with automatic failover and token ledger",
   "type": "module",
   "main": "src/index.mjs",
   "bin": {
@@ -12,7 +12,6 @@
     "start": "node bin/freedog.mjs start",
     "dev": "node bin/freedog.mjs start --verbose",
     "claude": "node bin/freedog.mjs claude",
-    "radar": "node bin/freedog.mjs radar",
     "test": "node test/run-tests.mjs"
   },
   "keywords": [
@@ -22,7 +21,7 @@
     "proxy",
     "free-ai",
     "llm-gateway",
-    "radar",
+    "providers",
     "webui"
   ],
   "author": "FreeAI Dog Core Team",

@@ -1,12 +1,12 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { translateAnthropicToOpenAI, streamOpenAIToAnthropic } from './translator.mjs';
 import { ThinkingPatchManager } from './thinking-patch.mjs';
 import { UpstreamRouter } from './router.mjs';
 import { RequestLogger } from './logger.mjs';
+import { ConfigManager } from '../config/config-manager.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,18 +17,16 @@ export function createGatewayServer(options = {}) {
     radarClient,
     costLedger,
     logger = new RequestLogger(),
+    configManager = new ConfigManager(),
     port = 8000,
     host = '127.0.0.1'
   } = options;
 
   const thinkingManager = new ThinkingPatchManager();
-  const router = new UpstreamRouter(radarClient);
-
-  const configDir = path.join(os.homedir(), '.freedog');
-  const configFile = path.join(configDir, 'config.json');
+  const router = new UpstreamRouter(radarClient, { configManager });
 
   const server = http.createServer(async (req, res) => {
-    // 跨域支持
+    // 跨域支持，允许从 freeaidog.com 网站直接探测与唤醒本地网关
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, anthropic-version');
@@ -42,7 +40,7 @@ export function createGatewayServer(options = {}) {
     const url = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
     const pathname = url.pathname;
 
-    // 0. WebUI 静态仪表盘首页
+    // 0. Web 控制台主页
     if (req.method === 'GET' && (pathname === '/' || pathname === '/dashboard')) {
       try {
         if (fs.existsSync(dashboardHtmlPath)) {
@@ -53,76 +51,69 @@ export function createGatewayServer(options = {}) {
         }
       } catch (err) {}
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<h1>FreeDog Gateway Dashboard</h1><p>Dashboard file loading error.</p>');
+      res.end('<h1>FreeDog Gateway</h1><p>Dashboard file loading error.</p>');
       return;
     }
 
-    // 1. 健康探针
+    // 0.1 网站直达深层唤醒挂载接口 [GET 方式便于浏览器链接跳转]
+    if (req.method === 'GET' && pathname === '/api/import') {
+      const name = url.searchParams.get('name') || 'Custom Provider';
+      const baseUrl = url.searchParams.get('baseUrl') || '';
+      const model = url.searchParams.get('model') || '';
+      const apiKey = url.searchParams.get('apiKey') || '';
+      const protocol = url.searchParams.get('protocol') || 'openai';
+
+      if (baseUrl && model) {
+        configManager.importProvider({ name, baseUrl, model, apiKey, protocol });
+      }
+
+      // 重定向回控制台首页并携带导入标识
+      res.writeHead(302, { Location: `/?imported=1&name=${encodeURIComponent(name)}` });
+      res.end();
+      return;
+    }
+
+    // 1. 健康探针 [用于主站 freeaidog.com 一键探测用户本地网关是否在线]
     if (req.method === 'GET' && pathname === '/health') {
       const summary = costLedger.getSummary();
-      const activeRoute = radarClient.getOptimalRoute('coding');
+      const cfg = configManager.getConfig();
+      const target = router.resolveTarget('claude-3-7-sonnet');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
-        version: '0.2.0',
-        activeRoute: activeRoute ? activeRoute.name : 'Unknown',
-        targetModel: activeRoute ? activeRoute.model : 'Unknown',
+        app: 'freedog-gateway',
+        version: '0.3.0',
+        activeProvider: target.providerName,
+        targetModel: target.targetModel,
         totalSavingsUsd: summary.savingsUsd,
-        totalTokensProcessed: summary.totalTokens
+        totalTokensProcessed: summary.totalTokens,
+        providersCount: (cfg.providers || []).length
       }, null, 2));
       return;
     }
 
-    // 2. 雷达线路查询
-    if (req.method === 'GET' && pathname === '/api/radar') {
-      const routes = radarClient.listRoutes();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ routes }, null, 2));
-      return;
-    }
-
-    // 2.1 强制同步雷达远端全网线路
-    if (req.method === 'POST' && pathname === '/api/radar/sync') {
-      try {
-        const routes = await radarClient.syncRadar(true);
-        const count = Array.isArray(routes) ? routes.length : 0;
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, count }));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: err.message }));
-      }
-      return;
-    }
-
-    // 3. 算力账本统计
+    // 2. 算力账本统计
     if (req.method === 'GET' && pathname === '/api/stats') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(costLedger.getSummary(), null, 2));
       return;
     }
 
-    // 3.1 审计日志查询接口
+    // 3. 审计日志查询接口
     if (req.method === 'GET' && pathname === '/api/logs') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ logs: logger.getRecentLogs(50) }, null, 2));
       return;
     }
 
-    // 3.2 配置读取接口
+    // 4. 配置读取接口
     if (req.method === 'GET' && pathname === '/api/config') {
-      let configData = {};
-      try {
-        if (fs.existsSync(configFile)) {
-          configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
-        }
-      } catch (err) {}
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(configData, null, 2));
+      res.end(JSON.stringify(configManager.getConfig(), null, 2));
       return;
     }
 
-    // 4. 模型发现接口 [为 Claude Code 提供动态网关模型列表]
+    // 5. 模型发现接口 [为 Claude Code 客户端提供模型握手]
     if (req.method === 'GET' && pathname === '/v1/models') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -154,15 +145,12 @@ export function createGatewayServer(options = {}) {
         return;
       }
 
-      // 3.3 配置保存接口
+      // 6. 配置保存接口
       if (req.method === 'POST' && pathname === '/api/config') {
         try {
-          if (!fs.existsSync(configDir)) {
-            fs.mkdirSync(configDir, { recursive: true });
-          }
-          fs.writeFileSync(configFile, JSON.stringify(body, null, 2), 'utf8');
+          const saved = configManager.saveConfig(body);
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true }));
+          res.end(JSON.stringify({ success: true, config: saved }));
         } catch (err) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: err.message }));
@@ -170,7 +158,20 @@ export function createGatewayServer(options = {}) {
         return;
       }
 
-      // 5. 核心接口：Anthropic Messages 协议中转
+      // 7. 网站远程一键挂载渠道接口 [POST 方式由前端 fetch 触发]
+      if (req.method === 'POST' && pathname === '/api/providers/import') {
+        try {
+          const result = configManager.importProvider(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+      }
+
+      // 8. 核心接口：Anthropic Messages 协议中转
       if (req.method === 'POST' && pathname === '/v1/messages') {
         const startTime = Date.now();
         const sessionId = req.headers['x-session-id'] || 'session_default';
@@ -226,7 +227,6 @@ export function createGatewayServer(options = {}) {
 
             const inTokens = Math.floor(bodyText.length / 4);
             const outTokens = 150;
-            // 记录账本
             const ledgerRes = costLedger.recordTransaction(
               inTokens,
               outTokens,
@@ -316,6 +316,7 @@ export function createGatewayServer(options = {}) {
   return {
     server,
     logger,
+    configManager,
     start: () => new Promise(resolve => {
       server.listen(port, host, () => {
         resolve({ host, port });

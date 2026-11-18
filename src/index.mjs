@@ -1,3 +1,4 @@
+export { ConfigManager, DEFAULT_PRESET_PROVIDERS } from './config/config-manager.mjs';
 export { RadarClient } from './radar/radar-client.mjs';
 export { CostLedger } from './ledger/cost-ledger.mjs';
 export { createGatewayServer } from './proxy/server.mjs';

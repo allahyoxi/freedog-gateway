@@ -7,6 +7,7 @@ import { translateAnthropicToOpenAI } from '../src/proxy/translator.mjs';
 import { getClaudeInjectedEnv } from '../src/watchdog/launcher.mjs';
 import { RequestLogger } from '../src/proxy/logger.mjs';
 import { createGatewayServer } from '../src/proxy/server.mjs';
+import { ConfigManager } from '../src/config/config-manager.mjs';
 
 console.log('========================================================');
 console.log('正在执行 FreeDog Gateway 核心功能自动化单测套件...');
@@ -112,16 +113,19 @@ console.log('  ✓ 请求审计日志环形缓冲区读写与字段记录正常'
 
 // 测试 7: 本地 WebUI 与控制台服务响应
 console.log('\n[Test 7] 验证 WebUI 静态资源与控制台 API 路由');
+const testConfigFile = '/tmp/freedog-test-config.json';
+const configManager = new ConfigManager(testConfigFile);
 const gateway = createGatewayServer({
   radarClient: radar,
   costLedger: ledger,
   logger: reqLogger,
+  configManager,
   port: 18099,
   host: '127.0.0.1'
 });
 
 // 使用内存 Mock 请求对象直接触发 HTTP 路由调度，避免沙箱网络隔离阻断
-function dispatchMockRequest(method, pathname) {
+function dispatchMockRequest(method, pathname, postBody = null) {
   return new Promise(resolve => {
     const req = new EventEmitter();
     req.method = method;
@@ -146,21 +150,42 @@ function dispatchMockRequest(method, pathname) {
     };
 
     gateway.server.emit('request', req, res);
+    if (postBody) {
+      req.emit('data', typeof postBody === 'string' ? postBody : JSON.stringify(postBody));
+    }
     req.emit('end');
   });
 }
 
 const resHome = await dispatchMockRequest('GET', '/');
 assert.strictEqual(resHome.statusCode, 200, '首页状态码应为 200');
-assert(resHome.body.includes('FreeDog Gateway'), '首页 HTML 必须包含控制台主标识');
+assert(resHome.body.includes('Cloud providers'), '首页 HTML 必须包含服务商卡片大厅');
 
-const resLogs = await dispatchMockRequest('GET', '/api/logs');
-assert.strictEqual(resLogs.statusCode, 200, 'Logs 状态码应为 200');
-const logsJson = JSON.parse(resLogs.body);
-assert(Array.isArray(logsJson.logs) && logsJson.logs.length >= 1, 'Logs 应返回日志数组');
+const resConfig = await dispatchMockRequest('GET', '/api/config');
+assert.strictEqual(resConfig.statusCode, 200, 'Config 状态码应为 200');
+const configJson = JSON.parse(resConfig.body);
+assert(Array.isArray(configJson.providers) && configJson.providers.length >= 9, '默认应包含主流服务商模板卡片');
 
-console.log('  ✓ WebUI 静态控制台与全部路由接口单测通过');
+console.log('  ✓ WebUI 静态控制台与渠道管理接口单测通过');
+
+// 测试 8: 网站直达深层挂载与导入
+console.log('\n[Test 8] 验证网站一键直达挂载渠道接口');
+const importResult = await dispatchMockRequest('POST', '/api/providers/import', {
+  name: 'SiliconFlow 硅基流动',
+  baseUrl: 'https://api.siliconflow.cn/v1',
+  model: 'deepseek-ai/DeepSeek-V3',
+  apiKey: 'sk-test-demo',
+  description: '由 FreeAI Dog 网站一键装载'
+});
+assert.strictEqual(importResult.statusCode, 200, '导入状态码应为 200');
+const importJson = JSON.parse(importResult.body);
+assert.strictEqual(importJson.success, true, '挂载应返回 success');
+
+const updatedConfig = configManager.getConfig();
+const imported = updatedConfig.providers.find(p => p.name === 'SiliconFlow 硅基流动');
+assert(imported && imported.apiKey === 'sk-test-demo', '导入的渠道与密钥必须持久化至配置库');
+console.log('  ✓ 网站一键直达挂载渠道与端点入库无缝验证通过');
 
 console.log('\n========================================================');
-console.log('🎉 全部 7 项核心机制与 WebUI 自动化单测 100% 通过！');
+console.log('🎉 全部 8 项核心机制与 WebUI 自动化单测 100% 通过！');
 console.log('========================================================\n');
