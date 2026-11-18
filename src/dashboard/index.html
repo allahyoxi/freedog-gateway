@@ -36,6 +36,33 @@
       overflow: hidden;
     }
 
+    /* 浮动提示 Toast */
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background-color: #238636;
+      color: white;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      z-index: 999;
+      transform: translateY(-80px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
     /* 左侧边栏导航 */
     .sidebar {
       width: 240px;
@@ -339,11 +366,12 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background-color: rgba(0, 0, 0, 0.7);
+      background-color: rgba(0, 0, 0, 0.75);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 100;
+      backdrop-filter: blur(2px);
     }
 
     .modal-overlay.open {
@@ -354,10 +382,10 @@
       background-color: var(--sidebar-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      width: 500px;
+      width: 520px;
       max-width: 90vw;
       padding: 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
     }
 
     .modal-title {
@@ -382,10 +410,15 @@
       background-color: var(--bg-dark);
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      padding: 8px 12px;
+      padding: 9px 12px;
       color: var(--text-main);
       font-size: 13px;
       font-family: monospace;
+    }
+
+    .form-input::placeholder {
+      color: #484f58;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     .form-input:focus {
@@ -413,10 +446,16 @@
       background-color: var(--accent-green);
       color: white;
       border: none;
-      padding: 8px 20px;
+      padding: 8px 22px;
       border-radius: 6px;
       font-weight: 600;
       cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-save-modal:hover {
+      background-color: var(--accent-green-bright);
     }
 
     .btn-cancel-modal {
@@ -426,6 +465,7 @@
       padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 13px;
     }
 
     .btn-delete-modal {
@@ -435,6 +475,7 @@
       padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 13px;
     }
 
     /* 审计日志表格 */
@@ -487,6 +528,11 @@
   </style>
 </head>
 <body>
+
+  <!-- 浮动提示组件 -->
+  <div class="toast" id="toast-msg">
+    <span>✓</span> <span id="toast-text">配置已保存</span>
+  </div>
 
   <!-- 左侧导航 -->
   <aside class="sidebar">
@@ -627,7 +673,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         <div class="status-text" id="bottom-status">No changes</div>
         <div class="path-text" id="config-path">~/.freedog/config.json</div>
       </div>
-      <button class="btn-apply" onclick="applyChanges()">Apply</button>
+      <button class="btn-apply" onclick="applyChanges(true)">Apply</button>
     </div>
 
   </main>
@@ -639,22 +685,22 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       <div class="form-group">
         <label>服务商名称</label>
-        <input type="text" id="modal-input-name" class="form-input">
+        <input type="text" id="modal-input-name" class="form-input" placeholder="例如: 硅基流动 / 深度求索 / 局域网反代">
       </div>
 
       <div class="form-group">
         <label>接口地址 [Base URL]</label>
-        <input type="text" id="modal-input-url" class="form-input">
+        <input type="text" id="modal-input-url" class="form-input" placeholder="例如: https://api.siliconflow.cn/v1">
       </div>
 
       <div class="form-group">
         <label>授权密钥 [API Key]</label>
-        <input type="password" id="modal-input-key" class="form-input" placeholder="留空则使用免密或环境变量">
+        <input type="password" id="modal-input-key" class="form-input" placeholder="sk-... [留空则免密或使用环境变量]">
       </div>
 
       <div class="form-group">
         <label>默认目标模型标识 [Model ID]</label>
-        <input type="text" id="modal-input-model" class="form-input">
+        <input type="text" id="modal-input-model" class="form-input" placeholder="例如: deepseek-ai/DeepSeek-V3">
       </div>
 
       <div class="switch-row">
@@ -679,12 +725,22 @@ export API_TIMEOUT_MS="2147483647"</pre>
     let hasUnsavedChanges = false;
     let editingProviderId = null;
 
+    function showToast(text) {
+      const toast = document.getElementById('toast-msg');
+      const toastText = document.getElementById('toast-text');
+      toastText.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
     // 标签页切换
     function switchTab(tabKey) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
 
-      const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.onclick.toString().includes(tabKey));
+      const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.onclick && el.onclick.toString().includes(tabKey));
       if (targetNav) targetNav.classList.add('active');
 
       const targetContent = document.getElementById('tab-' + tabKey);
@@ -716,6 +772,9 @@ export API_TIMEOUT_MS="2147483647"</pre>
         const res = await fetch('/api/config');
         if (res.ok) {
           currentConfig = await res.json();
+          if (!Array.isArray(currentConfig.providers)) {
+            currentConfig.providers = [];
+          }
           renderProviders();
           renderModelSelects();
           markSaved();
@@ -766,6 +825,8 @@ export API_TIMEOUT_MS="2147483647"</pre>
     function renderModelSelects() {
       const sonnetSelect = document.getElementById('select-sonnet');
       const haikuSelect = document.getElementById('select-haiku');
+      if (!sonnetSelect || !haikuSelect) return;
+
       sonnetSelect.innerHTML = '';
       haikuSelect.innerHTML = '';
 
@@ -786,14 +847,22 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
     function openEditModal(providerId) {
       editingProviderId = providerId;
-      const p = currentConfig.providers.find(item => item.id === providerId);
+      const p = (currentConfig.providers || []).find(item => item.id === providerId);
       if (!p) return;
 
-      document.getElementById('modal-provider-name').textContent = 'Edit ' + p.name;
+      document.getElementById('modal-provider-name').textContent = '编辑渠道 · ' + p.name;
       document.getElementById('modal-input-name').value = p.name || '';
+      document.getElementById('modal-input-name').placeholder = '服务商名称';
+
       document.getElementById('modal-input-url').value = p.baseUrl || '';
+      document.getElementById('modal-input-url').placeholder = 'https://api.openai.com/v1';
+
       document.getElementById('modal-input-key').value = p.apiKey || '';
+      document.getElementById('modal-input-key').placeholder = 'sk-... [留空则免密或使用环境变量]';
+
       document.getElementById('modal-input-model').value = p.model || '';
+      document.getElementById('modal-input-model').placeholder = '例如: deepseek-ai/DeepSeek-V3';
+
       document.getElementById('modal-input-enabled').checked = Boolean(p.enabled);
 
       document.getElementById('btn-delete-provider').style.display = 'block';
@@ -802,31 +871,67 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
     function openAddModal() {
       editingProviderId = null;
-      document.getElementById('modal-provider-name').textContent = 'Add Custom Provider';
-      document.getElementById('modal-input-name').value = '我的自定义服务商';
-      document.getElementById('modal-input-url').value = 'https://api.openai.com/v1';
+      document.getElementById('modal-provider-name').textContent = '添加自定义渠道';
+
+      // 关键：清空实际值，全部改为浅灰提示 placeholder，点击直接输入无需手动删除！
+      document.getElementById('modal-input-name').value = '';
+      document.getElementById('modal-input-name').placeholder = '例如: 硅基流动 / 深度求索 / 局域网反代';
+
+      document.getElementById('modal-input-url').value = '';
+      document.getElementById('modal-input-url').placeholder = '例如: https://api.siliconflow.cn/v1';
+
       document.getElementById('modal-input-key').value = '';
-      document.getElementById('modal-input-model').value = 'deepseek-ai/DeepSeek-V3';
+      document.getElementById('modal-input-key').placeholder = 'sk-... [留空则免密或使用环境变量]';
+
+      document.getElementById('modal-input-model').value = '';
+      document.getElementById('modal-input-model').placeholder = '例如: deepseek-ai/DeepSeek-V3';
+
       document.getElementById('modal-input-enabled').checked = true;
 
       document.getElementById('btn-delete-provider').style.display = 'none';
       document.getElementById('edit-modal').classList.add('open');
+      document.getElementById('modal-input-name').focus();
     }
 
     function closeModal() {
       document.getElementById('edit-modal').classList.remove('open');
     }
 
-    function saveModal() {
-      const name = document.getElementById('modal-input-name').value.trim();
-      const baseUrl = document.getElementById('modal-input-url').value.trim();
-      const apiKey = document.getElementById('modal-input-key').value.trim();
-      const model = document.getElementById('modal-input-model').value.trim();
-      const enabled = document.getElementById('modal-input-enabled').checked;
+    // 点击遮罩外部空白区域自动关闭弹窗
+    document.getElementById('edit-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
 
-      if (!name || !baseUrl) {
-        alert('服务商名称和 Base URL 不能为空');
+    async function saveModal() {
+      const nameInput = document.getElementById('modal-input-name');
+      const urlInput = document.getElementById('modal-input-url');
+      const keyInput = document.getElementById('modal-input-key');
+      const modelInput = document.getElementById('modal-input-model');
+      const enabledInput = document.getElementById('modal-input-enabled');
+
+      const name = nameInput.value.trim();
+      const baseUrl = urlInput.value.trim();
+      const apiKey = keyInput.value.trim();
+      const model = modelInput.value.trim();
+      const enabled = enabledInput.checked;
+
+      if (!name) {
+        alert('请填写服务商名称');
+        nameInput.focus();
         return;
+      }
+      if (!baseUrl) {
+        alert('请填写接口地址 Base URL');
+        urlInput.focus();
+        return;
+      }
+
+      const finalModel = model || 'default-model';
+
+      if (!Array.isArray(currentConfig.providers)) {
+        currentConfig.providers = [];
       }
 
       if (editingProviderId) {
@@ -835,7 +940,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
           p.name = name;
           p.baseUrl = baseUrl;
           p.apiKey = apiKey;
-          p.model = model;
+          p.model = finalModel;
           p.enabled = enabled;
         }
       } else {
@@ -847,8 +952,8 @@ export API_TIMEOUT_MS="2147483647"</pre>
           enabled,
           baseUrl,
           apiKey,
-          model,
-          models: [model],
+          model: finalModel,
+          models: [finalModel],
           protocol: 'openai',
           description: '用户自定义模型渠道'
         });
@@ -857,23 +962,27 @@ export API_TIMEOUT_MS="2147483647"</pre>
       closeModal();
       renderProviders();
       renderModelSelects();
-      markUnsaved();
+
+      // 立即自动持久化保存到本地后台，不需要用户额外去点 Apply 按钮
+      await autoSaveConfig(`服务商 [${name}] 已成功保存并生效！`);
     }
 
     function deleteCurrentProvider() {
       if (!editingProviderId) return;
       if (!confirm('确定删除此服务商渠道吗？')) return;
 
-      currentConfig.providers = currentConfig.providers.filter(p => p.id !== editingProviderId);
+      currentConfig.providers = (currentConfig.providers || []).filter(p => p.id !== editingProviderId);
       closeModal();
       renderProviders();
       renderModelSelects();
-      markUnsaved();
+      autoSaveConfig('服务商渠道已成功删除！');
     }
 
-    async function applyChanges() {
-      currentConfig.sonnetProviderId = document.getElementById('select-sonnet').value;
-      currentConfig.haikuProviderId = document.getElementById('select-haiku').value;
+    async function autoSaveConfig(successToastText = '配置已保存生效！') {
+      const sonnetSelect = document.getElementById('select-sonnet');
+      const haikuSelect = document.getElementById('select-haiku');
+      if (sonnetSelect && sonnetSelect.value) currentConfig.sonnetProviderId = sonnetSelect.value;
+      if (haikuSelect && haikuSelect.value) currentConfig.haikuProviderId = haikuSelect.value;
 
       try {
         const res = await fetch('/api/config', {
@@ -883,10 +992,17 @@ export API_TIMEOUT_MS="2147483647"</pre>
         });
         if (res.ok) {
           markSaved();
-          alert('配置已成功保存并立即生效！');
+          showToast(successToastText);
         }
       } catch (err) {
-        alert('保存配置失败，请检查网关连接');
+        alert('保存配置失败，请检查网关运行状态');
+      }
+    }
+
+    async function applyChanges(showSuccessAlert = false) {
+      await autoSaveConfig('全部配置已成功保存并立即生效！');
+      if (showSuccessAlert) {
+        alert('配置已成功保存并立即生效！');
       }
     }
 
