@@ -324,4 +324,117 @@ export class UpstreamRouter {
       };
     }
   }
+
+  // 向上游服务商查询并动态拉取当前 API Key 可用的模型列表
+  async fetchModels(options = {}) {
+    const baseUrl = (options.baseUrl || '').replace(/\/+$/, '');
+    const apiKey = (options.apiKey || '').trim();
+    const protocol = options.protocol || 'openai';
+
+    if (!baseUrl) {
+      return {
+        success: false,
+        status: 0,
+        message: 'Base URL 不能为空',
+        models: []
+      };
+    }
+
+    let endpoint = `${baseUrl}/models`;
+    if (baseUrl.endsWith('/chat/completions')) {
+      endpoint = baseUrl.replace(/\/chat\/completions$/, '/models');
+    } else if (protocol === 'ollama') {
+      endpoint = `${baseUrl}/api/tags`;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      let requestUrl = endpoint;
+      if (baseUrl.includes('generativelanguage.googleapis.com') && !baseUrl.includes('/openai') && apiKey) {
+        requestUrl = `${endpoint}?key=${apiKey}`;
+      }
+
+      const res = await fetch(requestUrl, {
+        method: 'GET',
+        headers,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const status = res.status;
+      if (!res.ok) {
+        let detail = '';
+        try {
+          const rawText = await res.text();
+          if (rawText) {
+            let json = JSON.parse(rawText);
+            if (Array.isArray(json) && json.length > 0) json = json[0];
+            detail = json.error?.message || json.message || (typeof json.error === 'string' ? json.error : '') || rawText.slice(0, 100);
+          }
+        } catch (_) {}
+
+        return {
+          success: false,
+          status,
+          message: detail ? `HTTP ${status}: ${detail}` : `HTTP ${status} 拉取失败`,
+          models: []
+        };
+      }
+
+      const data = await res.json();
+      let extracted = [];
+
+      // 1. OpenAI 格式: { object: 'list', data: [ { id: '...' } ] }
+      if (Array.isArray(data.data)) {
+        extracted = data.data.map(item => item.id || item.name).filter(Boolean);
+      }
+      // 2. Google 格式: { models: [ { name: 'models/gemini-...' } ] }
+      else if (Array.isArray(data.models)) {
+        extracted = data.models.map(item => {
+          const rawName = item.name || item.id || '';
+          return rawName.replace(/^models\//, '');
+        }).filter(Boolean);
+      }
+      // 3. 直接数组格式
+      else if (Array.isArray(data)) {
+        extracted = data.map(item => (typeof item === 'string' ? item : (item.id || item.name))).filter(Boolean);
+      }
+
+      const uniqueModels = Array.from(new Set(extracted));
+
+      return {
+        success: true,
+        status: 200,
+        count: uniqueModels.length,
+        models: uniqueModels,
+        message: `成功拉取到 ${uniqueModels.length} 个可用模型`
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      const isTimeout = err.name === 'AbortError';
+      if (err.message && (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED'))) {
+        return {
+          success: false,
+          status: 0,
+          message: '本地或目标端点未运行 [连接被系统拒绝]',
+          models: []
+        };
+      }
+      return {
+        success: false,
+        status: 0,
+        message: isTimeout ? '拉取超时 [8s 超时]' : `拉取失败: ${err.message}`,
+        models: []
+      };
+    }
+  }
 }

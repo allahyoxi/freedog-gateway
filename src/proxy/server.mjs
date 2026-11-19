@@ -200,6 +200,46 @@ export function createGatewayServer(options = {}) {
         return;
       }
 
+      // 7.2 服务商模型动态拉取接口 [POST 方式由前端控制台触发]
+      if (req.method === 'POST' && pathname === '/api/providers/fetch-models') {
+        try {
+          let testTarget = body;
+          let targetId = body.providerId || body.id;
+          if (targetId) {
+            const cfg = configManager.getConfig();
+            const p = (cfg.providers || []).find(item => item.id === targetId);
+            if (p) {
+              testTarget = {
+                baseUrl: body.baseUrl || p.baseUrl,
+                apiKey: body.apiKey !== undefined ? body.apiKey : p.apiKey,
+                protocol: body.protocol || p.protocol
+              };
+            }
+          }
+
+          const result = await router.fetchModels(testTarget);
+
+          // 若拉取成功且指定了渠道 ID，自动将模型列表存入配置库中的 models 数组
+          if (result.success && targetId && Array.isArray(result.models) && result.models.length > 0) {
+            try {
+              const cfg = configManager.getConfig();
+              const p = (cfg.providers || []).find(item => item.id === targetId);
+              if (p) {
+                p.models = result.models;
+                configManager.saveConfig(cfg);
+              }
+            } catch (_) {}
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+      }
+
       // 8. 核心接口：Anthropic Messages 协议中转
       if (req.method === 'POST' && pathname === '/v1/messages') {
         const startTime = Date.now();

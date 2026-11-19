@@ -206,6 +206,19 @@ assert(Array.isArray(candidates) && candidates.length >= 2, '候选渠道列表�
 assert.strictEqual(candidates[0].providerName, 'SiliconFlow 硅基流动', '首选渠道应优先入选');
 console.log(`  ✓ 成功生成 ${candidates.length} 级容灾备份路由链，首选: [${candidates[0].providerName}]`);
 
+// 测试 11: 渠道模型列表动态拉取接口
+console.log('\n[Test 11] 验证服务商可用模型列表动态拉取接口');
+const fetchModelsResult = await dispatchMockRequest('POST', '/api/providers/fetch-models', {
+  baseUrl: '',
+  apiKey: ''
+});
+assert.strictEqual(fetchModelsResult.statusCode, 200, 'Fetch Models 接口状态码应为 200');
+const fetchModelsJson = JSON.parse(fetchModelsResult.body);
+assert.strictEqual(fetchModelsJson.success, false, '空 Base URL 应返回校验失败');
+assert(fetchModelsJson.message.includes('Base URL'), '应提示 Base URL 不能为空');
+assert(Array.isArray(fetchModelsJson.models), 'models 字段必须为数组');
+console.log('  ✓ 服务商模型列表动态拉取接口校验与结构正常');
+
 console.log('\n========================================================');
-console.log('🎉 全部 10 项核心机制、Ping 测速与 Failover 自动化单测 100% 通过！');
+console.log('🎉 全部 11 项核心网关机制、测速与动态拉取单测 100% 通过！');
 console.log('========================================================\n');

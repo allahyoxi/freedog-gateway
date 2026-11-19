@@ -552,6 +552,57 @@
       cursor: not-allowed;
     }
 
+    .btn-fetch-models {
+      background-color: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #a5b4fc;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-fetch-models:hover {
+      background-color: rgba(99, 102, 241, 0.25);
+      border-color: #818cf8;
+      color: #c7d2fe;
+    }
+
+    .btn-fetch-models:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .model-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .model-pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .model-pill.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #34d399;
+      font-weight: 600;
+    }
+
     .modal-test-banner {
       padding: 10px 14px;
       border-radius: 6px;
@@ -800,8 +851,15 @@ export API_TIMEOUT_MS="2147483647"</pre>
       </div>
 
       <div class="form-group">
-        <label>默认目标模型标识 [Model ID]</label>
-        <input type="text" id="modal-input-model" class="form-input" placeholder="例如: deepseek-ai/DeepSeek-V3">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="margin-bottom: 0;">默认目标模型标识 [Model ID]</label>
+          <button type="button" class="btn-fetch-models" id="btn-fetch-models" onclick="fetchModelsForModal()">🔄 拉取可用模型</button>
+        </div>
+        <div style="position: relative;">
+          <input type="text" id="modal-input-model" class="form-input" list="modal-model-datalist" placeholder="例如: deepseek-ai/DeepSeek-V3" oninput="highlightMatchingPill(this.value)">
+          <datalist id="modal-model-datalist"></datalist>
+        </div>
+        <div id="modal-models-pills" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"></div>
       </div>
 
       <div class="switch-row">
@@ -984,6 +1042,8 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       document.getElementById('modal-input-enabled').checked = Boolean(p.enabled);
 
+      renderModalModelPills(p.models || [], p.model || '');
+
       document.getElementById('btn-delete-provider').style.display = 'block';
       document.getElementById('edit-modal').classList.add('open');
     }
@@ -1008,9 +1068,127 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       document.getElementById('modal-input-enabled').checked = true;
 
+      renderModalModelPills([], '');
+
       document.getElementById('btn-delete-provider').style.display = 'none';
       document.getElementById('edit-modal').classList.add('open');
       document.getElementById('modal-input-name').focus();
+    }
+
+    let modalFetchedModels = [];
+
+    function renderModalModelPills(models = [], currentSelected = '') {
+      modalFetchedModels = Array.isArray(models) ? [...models] : [];
+      const datalist = document.getElementById('modal-model-datalist');
+      const container = document.getElementById('modal-models-pills');
+      if (datalist) {
+        datalist.innerHTML = modalFetchedModels.map(m => `<option value="${m}"></option>`).join('');
+      }
+      if (container) {
+        if (modalFetchedModels.length === 0) {
+          container.innerHTML = '';
+          return;
+        }
+        const displayModels = modalFetchedModels.slice(0, 8);
+        container.innerHTML = displayModels.map(m => {
+          const isActive = m === currentSelected ? 'active' : '';
+          return `<span class="model-pill ${isActive}" onclick="selectModalModel('${m}')">${m}</span>`;
+        }).join('');
+        if (modalFetchedModels.length > 8) {
+          container.innerHTML += `<span style="font-size: 11px; color: var(--text-muted); align-self: center;">+ 更多 ${modalFetchedModels.length - 8} 款下拉可选</span>`;
+        }
+      }
+    }
+
+    function selectModalModel(modelName) {
+      const input = document.getElementById('modal-input-model');
+      if (input) {
+        input.value = modelName;
+        highlightMatchingPill(modelName);
+      }
+    }
+
+    function highlightMatchingPill(value) {
+      document.querySelectorAll('#modal-models-pills .model-pill').forEach(pill => {
+        if (pill.textContent === value) {
+          pill.classList.add('active');
+        } else {
+          pill.classList.remove('active');
+        }
+      });
+    }
+
+    // 向上游服务商动态拉取可用模型列表
+    async function fetchModelsForModal() {
+      const btn = document.getElementById('btn-fetch-models');
+      const banner = document.getElementById('modal-test-banner');
+      const baseUrl = document.getElementById('modal-input-url').value.trim();
+      const apiKey = document.getElementById('modal-input-key').value.trim();
+
+      if (!baseUrl) {
+        alert('请先填写接口地址 Base URL');
+        document.getElementById('modal-input-url').focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '🔄 正在拉取...';
+      }
+
+      if (banner) {
+        banner.style.display = 'block';
+        banner.className = 'modal-test-banner testing';
+        banner.textContent = '正在向服务商查询当前 API Key 授权的可用模型池...';
+      }
+
+      try {
+        const res = await fetch('/api/providers/fetch-models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            providerId: editingProviderId,
+            baseUrl,
+            apiKey,
+            protocol: 'openai'
+          })
+        });
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.models) && data.models.length > 0) {
+          const currentInput = document.getElementById('modal-input-model').value.trim();
+          renderModalModelPills(data.models, currentInput || data.models[0]);
+          if (!currentInput) {
+            document.getElementById('modal-input-model').value = data.models[0];
+          }
+
+          if (editingProviderId) {
+            const p = (currentConfig.providers || []).find(item => item.id === editingProviderId);
+            if (p) p.models = data.models;
+          }
+
+          if (banner) {
+            banner.className = 'modal-test-banner ok';
+            banner.innerHTML = `✓ <strong>成功拉取到 ${data.models.length} 款可用模型</strong> · 已载入下拉联想与快捷标签`;
+          }
+          showToast(`成功拉取到 ${data.models.length} 款模型`);
+        } else {
+          if (banner) {
+            banner.className = 'modal-test-banner err';
+            banner.innerHTML = `🔴 <strong>模型拉取失败</strong> · ${data.message || '未获取到模型列表'}`;
+          }
+        }
+      } catch (err) {
+        if (banner) {
+          banner.className = 'modal-test-banner err';
+          banner.innerHTML = `🔴 <strong>请求异常</strong> · 本地代理通信中断: ${err.message}`;
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🔄 拉取可用模型';
+        }
+      }
     }
 
     function closeModal() {
@@ -1179,6 +1357,9 @@ export API_TIMEOUT_MS="2147483647"</pre>
           p.apiKey = apiKey;
           p.model = finalModel;
           p.enabled = enabled;
+          if (modalFetchedModels && modalFetchedModels.length > 0) {
+            p.models = modalFetchedModels;
+          }
         }
       } else {
         const newId = 'prov_' + Date.now().toString(36);
@@ -1190,7 +1371,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
           baseUrl,
           apiKey,
           model: finalModel,
-          models: [finalModel],
+          models: modalFetchedModels && modalFetchedModels.length > 0 ? modalFetchedModels : [finalModel],
           protocol: 'openai',
           description: '用户自定义模型渠道'
         });
