@@ -1047,16 +1047,21 @@ export API_TIMEOUT_MS="2147483647"</pre>
       } catch (err) {}
     }
 
-    // 网页挂载回调检测
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('imported')) {
-      const impName = urlParams.get('name') || '';
-      alert(`已成功挂载服务商渠道 [${impName}]！请填入您的 API Key 后即可立即使用。`);
-      window.history.replaceState({}, document.title, '/');
-    }
-
-    // 初始化
-    loadConfig();
+    // 初始化与网页直达挂载回调检测
+    loadConfig().then(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('imported')) {
+        const impName = urlParams.get('name') || '';
+        window.history.replaceState({}, document.title, '/');
+        showToast(`已成功挂载服务商渠道 [${impName}]！`);
+        const found = (currentConfig.providers || []).find(p => p.name === impName);
+        if (found) {
+          setTimeout(() => {
+            openEditModal(found.id);
+          }, 150);
+        }
+      }
+    });
   </script>
 
 </body>
