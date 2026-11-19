@@ -235,16 +235,16 @@ export class UpstreamRouter {
 
       let detail = '';
       try {
-        const json = await res.json();
-        if (json.error?.message) {
-          detail = json.error.message;
+        const rawText = await res.text();
+        if (rawText) {
+          try {
+            const json = JSON.parse(rawText);
+            detail = json.error?.message || json.message || (typeof json.error === 'string' ? json.error : '') || rawText.slice(0, 100);
+          } catch (_) {
+            detail = rawText.slice(0, 100);
+          }
         }
-      } catch (e) {
-        try {
-          const text = await res.text();
-          if (text) detail = text.slice(0, 80);
-        } catch (e2) {}
-      }
+      } catch (_) {}
 
       if (status === 401) {
         return {
@@ -252,6 +252,14 @@ export class UpstreamRouter {
           status,
           latencyMs,
           message: detail ? `401 密钥失效: ${detail}` : '401 Unauthorized: 密钥无效或未授权'
+        };
+      }
+      if (status === 403) {
+        return {
+          success: false,
+          status,
+          latencyMs,
+          message: detail ? `403 权限拒绝: ${detail}` : '403 Forbidden: 访问被拒绝或需实名绑定'
         };
       }
       if (status === 429) {
@@ -270,6 +278,22 @@ export class UpstreamRouter {
           message: detail ? `404: ${detail}` : '404 Not Found: 模型不存在或端点路径错误'
         };
       }
+      if (status === 410) {
+        return {
+          success: false,
+          status,
+          latencyMs,
+          message: detail ? `410 已下架: ${detail}` : '410 Gone: 目标模型已被服务商下架退休'
+        };
+      }
+      if (status === 400) {
+        return {
+          success: false,
+          status,
+          latencyMs,
+          message: detail ? `400: ${detail}` : '400 Bad Request: 缺少有效 API 密钥或参数格式错误'
+        };
+      }
 
       return {
         success: false,
@@ -281,6 +305,14 @@ export class UpstreamRouter {
       clearTimeout(timeoutId);
       const latencyMs = Date.now() - startTime;
       const isTimeout = err.name === 'AbortError';
+      if (err.message && (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED'))) {
+        return {
+          success: false,
+          status: 0,
+          latencyMs,
+          message: '本地或目标端点未运行 [连接被系统拒绝]'
+        };
+      }
       return {
         success: false,
         status: 0,
