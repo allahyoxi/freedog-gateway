@@ -20,54 +20,101 @@
 ## 🚀 核心特性
 
 - **云端服务商卡片大厅**：预置主流免费/低价服务商模板 [Gemini、DeepSeek、Groq、Cerebras、NVIDIA NIM、OpenCode Zen、Local Ollama]，并支持无限添加自定义私有渠道。
+- **动态可用模型拉取**：输入 API Key 后一键拉取服务商授权的所有模型 ID，杜绝手填错误与模型命名盲区。
+- **实时 Ping 测速与状态码探测**：一键探测各渠道可用性与网络延迟，精准掌握各路由健康度。
+- **全界面四语言国际化**：Web 控制台完整支持中文、英文、日文、韩文四种语言，错误反馈原生本地化。
 - **网站一键直达挂载 [Web-to-Desktop]**：在 FreeAI Dog 官网看到心仪模型，点击一键挂载即可自动填入端点与模型标识，无需繁琐复制。
 - **全协议无损双向转译**：兼容 Anthropic Messages API、OpenAI Chat Completions 与 Gemini 原生格式。
 - **客户端看门狗深度欺骗**：自动注入底层参数，关闭客户端超时掐断，给多 Key 故障转移留足时间。
-- **思维签名临时缓存补丁**：无损维护会话级 `thought_signature`，支持思维链流式实时展示。
+- **思维签名临时缓存补丁**：无损维护会话级 thought_signature，支持思维链流式实时展示。
 - **透明算力账本跟踪**：自动统计每次对话节省的美金额度与 Token 吞吐量，本地持久化记账。
 - **极速零依赖架构**：纯原生 Node.js 构建，无需编译工具链或重型环境，毫秒级冷启动。
+
+---
+
+## 🛠️ 快速上手与一键启动
+
+无需克隆代码或配置复杂环境，拥有 Node.js 环境即可一键启动：
+
+### 推荐方式：npx 免安装秒级启动
+
+```bash
+npx --yes github:allahyoxi/freedog-gateway#main start
+```
+
+### 方式二：克隆源码本地常驻运行
+
+```bash
+git clone https://github.com/allahyoxi/freedog-gateway.git
+cd freedog-gateway
+npm start
+```
+
+启动后在浏览器打开控制台:
+```text
+http://127.0.0.1:8000/
+```
+
+---
+
+## 🔄 版本更新指南
+
+当网关发布了新功能或修复补丁时，更新方式如下：
+
+### 1. npx 方式更新
+
+如果在终端中使用 npx 启动，直接停止当前进程并再次执行带 `#main` 的指令，即可自动拉取 GitHub 上的最新发布代码：
+
+```bash
+npx --yes github:allahyoxi/freedog-gateway#main start
+```
+
+### 2. 源码克隆方式更新
+
+如果已克隆到本地目录，在项目根目录拉取最新提交并重启即可：
+
+```bash
+git pull origin main
+npm start
+```
+
+### 3. 全局安装方式更新
+
+如果通过 npm 全局安装，执行重新安装指令即可覆盖更新：
+
+```bash
+npm install -g github:allahyoxi/freedog-gateway#main
+freedog start
+```
 
 ---
 
 ## 🖥️ 现代化 Web 控制台
 
 本地网关启动后，访问 `http://127.0.0.1:8000` 即可开启专属控制台：
-- **Providers 服务商大厅**：卡片式网格直观管理所有大模型端点，自由开启、禁用、编辑与删除；
+- **Providers 服务商大厅**：卡片式网格直观管理所有大模型端点，自由开启、禁用、编辑、Ping 测速与删除；
 - **Model Config 映射**：将 Claude Code 的 Sonnet 主力任务与 Haiku 轻量任务精准绑定到指定渠道；
 - **Sessions & Ledger 账本**：实时对标 Claude 3.7 Sonnet 价格计算节省美金额度，记录请求审计流水；
 - **Connect 一键接管**：提供一键启动终端命令与环境变量复制面板；
-- **底部吸底控制条**：直观展示本地配置路径 `~/.freedog/config.json` 与未保存状态，一键热应用。
+- **四语言自由切换**：支持简中、英语、日本語、한국어，一键切换全界面语言与测试反馈。
 
 ---
 
-## 🛠️ 快速上手
+## 💻 一键接管 Claude Code 终端
 
-### 1. 启动本地网关
-
-```bash
-# 启动本地守护进程，默认监听 8000 端口并挂载 Web 控制台
-node bin/freedog.mjs start
-```
-
-### 2. 访问 Web 控制台
-
-打开浏览器访问:
-```text
-http://127.0.0.1:8000/
-```
-
-### 3. 一键接管 Claude Code
-
-新开一个终端，执行接管指令即可启动官方 Claude Code：
+新开一个终端窗口，执行接管指令即可启动官方 Claude Code：
 
 ```bash
-# 自动注入看门狗拦截环境变量并拉起客户端
+# 如果使用源码运行
 node bin/freedog.mjs claude
+
+# 或直接通过 npx 拉起接管
+npx --yes github:allahyoxi/freedog-gateway#main claude
 ```
 
 ---
 
-## 🧩 命令行参考
+## 🧩 命令行参数参考
 
 | 命令 | 说明 |
 | :--- | :--- |
