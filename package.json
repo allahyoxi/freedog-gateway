@@ -1,6 +1,6 @@
 {
   "name": "freedog-gateway",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Provider-driven local AI agent proxy connecting Claude Code and Codex to free upstream models with automatic failover and token ledger",
   "type": "module",
   "main": "src/index.mjs",

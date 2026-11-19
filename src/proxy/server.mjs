@@ -171,6 +171,35 @@ export function createGatewayServer(options = {}) {
         return;
       }
 
+      // 7.1 渠道即时连通性与网络延迟测速接口 [POST 方式由前端控制台触发]
+      if (req.method === 'POST' && pathname === '/api/providers/ping') {
+        try {
+          let testTarget = body;
+          // 若传入的是已有渠道的 ID，直接从配置中读取参数
+          if (body.providerId || body.id) {
+            const targetId = body.providerId || body.id;
+            const cfg = configManager.getConfig();
+            const p = (cfg.providers || []).find(item => item.id === targetId);
+            if (p) {
+              testTarget = {
+                baseUrl: p.baseUrl,
+                apiKey: p.apiKey,
+                model: p.model,
+                protocol: p.protocol
+              };
+            }
+          }
+
+          const result = await router.testConnection(testTarget);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+      }
+
       // 8. 核心接口：Anthropic Messages 协议中转
       if (req.method === 'POST' && pathname === '/v1/messages') {
         const startTime = Date.now();
@@ -315,6 +344,7 @@ export function createGatewayServer(options = {}) {
 
   return {
     server,
+    router,
     logger,
     configManager,
     start: () => new Promise(resolve => {

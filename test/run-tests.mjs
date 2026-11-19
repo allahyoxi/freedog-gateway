@@ -186,6 +186,26 @@ const imported = updatedConfig.providers.find(p => p.name === 'SiliconFlow 硅�
 assert(imported && imported.apiKey === 'sk-test-demo', '导入的渠道与密钥必须持久化至配置库');
 console.log('  ✓ 网站一键直达挂载渠道与端点入库无缝验证通过');
 
+// 测试 9: 渠道连通性 Ping 测速与状态码探测接口
+console.log('\n[Test 9] 验证渠道连通性 Ping 测速与状态码探测接口');
+const pingResult = await dispatchMockRequest('POST', '/api/providers/ping', {
+  baseUrl: '',
+  apiKey: ''
+});
+assert.strictEqual(pingResult.statusCode, 200, 'Ping 接口状态码应为 200');
+const pingJson = JSON.parse(pingResult.body);
+assert.strictEqual(pingJson.success, false, '空 Base URL 应返回校验失败');
+assert(pingJson.message.includes('Base URL'), '应提示 Base URL 不能为空');
+console.log('  ✓ 渠道连通性 Ping 探测接口校验与响应机制正常');
+
+// 测试 10: 候选路由队列与多渠道 Failover 容灾备份
+console.log('\n[Test 10] 验证多渠道 Failover 容灾备份与候选路由生成');
+const router = gateway.router;
+const candidates = router.resolveCandidates('claude-3-7-sonnet');
+assert(Array.isArray(candidates) && candidates.length >= 2, '候选渠道列表应包含首选与备用路由');
+assert.strictEqual(candidates[0].providerName, 'SiliconFlow 硅基流动', '首选渠道应优先入选');
+console.log(`  ✓ 成功生成 ${candidates.length} 级容灾备份路由链，首选: [${candidates[0].providerName}]`);
+
 console.log('\n========================================================');
-console.log('🎉 全部 8 项核心机制与 WebUI 自动化单测 100% 通过！');
+console.log('🎉 全部 10 项核心机制、Ping 测速与 Failover 自动化单测 100% 通过！');
 console.log('========================================================\n');
