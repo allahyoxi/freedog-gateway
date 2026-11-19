@@ -219,6 +219,27 @@ assert(fetchModelsJson.message.includes('Base URL'), '应提示 Base URL 不能�
 assert(Array.isArray(fetchModelsJson.models), 'models 字段必须为数组');
 console.log('  ✓ 服务商模型列表动态拉取接口校验与结构正常');
 
+// 测试 12: 验证版本检测与新版本比对逻辑
+console.log('\n[Test 12] 验证版本检测与新版本比对逻辑');
+const { compareVersions, checkLatestVersion, getLocalVersion } = await import('../src/proxy/version-checker.mjs');
+assert.strictEqual(compareVersions('0.6.2', '0.6.1'), 1, '新版本号应大于旧版本号');
+assert.strictEqual(compareVersions('0.6.1', '0.6.1'), 0, '相同版本号应相等');
+assert.strictEqual(compareVersions('0.6.0', '0.6.1'), -1, '旧版本号应小于新版本号');
+
+const mockFetch = async () => ({
+  ok: true,
+  json: async () => ({ version: '0.9.9' })
+});
+const mockCheck = await checkLatestVersion({ force: true, fetchFn: mockFetch });
+assert.strictEqual(mockCheck.hasUpdate, true, '高版本时 hasUpdate 应为 true');
+assert.strictEqual(mockCheck.latestVersion, '0.9.9', '应正确提取远端版本号');
+
+const versionCheckResult = await dispatchMockRequest('GET', '/api/version-check');
+assert.strictEqual(versionCheckResult.statusCode, 200, 'Version Check 状态码应为 200');
+const verJson = JSON.parse(versionCheckResult.body);
+assert(verJson.currentVersion, '必须包含 currentVersion 字段');
+console.log(`  ✓ 版本比对算法与自动化检查接口验证通过 [当前: v${getLocalVersion()}]`);
+
 console.log('\n========================================================');
-console.log('🎉 全部 11 项核心网关机制、测速与动态拉取单测 100% 通过！');
+console.log('🎉 全部 12 项核心网关机制、测速与自动化更新检测单测 100% 通过！');
 console.log('========================================================\n');

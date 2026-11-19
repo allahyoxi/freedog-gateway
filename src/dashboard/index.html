@@ -856,6 +856,81 @@
       color: #3fb950;
       margin-top: 6px;
     }
+
+    .update-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f85149, #d73a49);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
+    .update-notify-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(90deg, rgba(56, 139, 253, 0.15) 0%, rgba(137, 87, 229, 0.15) 100%);
+      border: 1px solid rgba(56, 139, 253, 0.4);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .update-notify-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #58a6ff;
+    }
+    .update-notify-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-update-copy {
+      background: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-update-copy:hover {
+      background: #2ea043;
+    }
+    .link-update-github {
+      font-size: 12px;
+      color: #8b949e;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .link-update-github:hover {
+      color: #c9d1d9;
+    }
+    .btn-update-close {
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 6px;
+    }
+    .btn-update-close:hover {
+      color: #f85149;
+    }
   </style>
 </head>
 <body>
@@ -869,7 +944,10 @@
   <aside class="sidebar">
     <div class="brand">
       <h2>🐾 FreeDog Gateway</h2>
-      <span data-i18n="brand_subtitle">Server Control · v0.6.1</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span data-i18n="brand_subtitle">Server Control · v0.6.1</span>
+        <span id="update-badge" class="update-badge" style="display: none;" onclick="focusUpdateBanner()">NEW</span>
+      </div>
     </div>
 
     <!-- 四语言即时切换栏 -->
@@ -911,6 +989,23 @@
     </div>
 
     <div class="content-area">
+
+      <!-- 新版本可用动态提醒栏 -->
+      <div id="update-notify-banner" class="update-notify-banner" style="display: none;">
+        <div class="update-notify-left">
+          <span style="font-size: 16px;">🚀</span>
+          <span id="update-notify-text">发现新版本</span>
+        </div>
+        <div class="update-notify-actions">
+          <button type="button" class="btn-update-copy" onclick="copyUpdateCommand()">
+            <span data-i18n="btn_copy_update">复制更新指令</span>
+          </button>
+          <a href="https://github.com/allahyoxi/freedog-gateway" target="_blank" class="link-update-github" data-i18n="link_view_release">
+            查看 GitHub ➔
+          </a>
+          <button type="button" class="btn-update-close" onclick="dismissUpdateBanner()" title="关闭提示">✕</button>
+        </div>
+      </div>
 
       <!-- 标签页 1: 服务商卡片管理 -->
       <div id="tab-providers" class="tab-content active">
@@ -1180,6 +1275,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
         alert_save_fail: "保存配置失败，请检查网关运行状态",
         toast_all_saved: "全部配置已成功保存并立即生效！",
         toast_imported: "已成功挂载服务商渠道 [{name}]！",
+        update_available_text: "发现新版本 v{latest} · 当前运行为 v{current}",
+        btn_copy_update: "复制更新指令",
+        link_view_release: "查看 GitHub ➔",
+        toast_update_copied: "已复制更新指令: npx --yes github:allahyoxi/freedog-gateway#main start",
         prov_desc: {
           prov_cerebras: "超高吞吐推理引擎 · 极速代码生成",
           prov_deepseek: "原厂顶级代码大模型 · 具备强悍系统级推理",
@@ -1285,6 +1384,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
         alert_save_fail: "Failed to save configuration, please check gateway status",
         toast_all_saved: "All configurations saved and activated!",
         toast_imported: "Successfully imported provider channel [{name}]!",
+        update_available_text: "New version v{latest} available · Current is v{current}",
+        btn_copy_update: "Copy Update Command",
+        link_view_release: "View GitHub ➔",
+        toast_update_copied: "Copied update command: npx --yes github:allahyoxi/freedog-gateway#main start",
         prov_desc: {
           prov_cerebras: "Ultra-high throughput inference engine · Blazing code generation",
           prov_deepseek: "Native flagship coding LLM · Robust system-level reasoning",
@@ -1390,6 +1493,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
         alert_save_fail: "設定の保存に失敗しました。ゲートウェイの状態を確認してください",
         toast_all_saved: "すべての設定が正常に保存され、即時反映されました！",
         toast_imported: "プロバイダーチャネル [{name}] のマウントに成功しました！",
+        update_available_text: "新バージョン v{latest} が利用可能です · 現在は v{current}",
+        btn_copy_update: "更新コマンドをコピー",
+        link_view_release: "GitHubを見る ➔",
+        toast_update_copied: "更新コマンドをコピーしました: npx --yes github:allahyoxi/freedog-gateway#main start",
         prov_desc: {
           prov_cerebras: "超高スループット推論エンジン · 高速コード生成",
           prov_deepseek: "公式フラグシップコーディングモデル · 強力な推論能力",
@@ -1495,6 +1602,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
         alert_save_fail: "설정 저장 실패, 게이트웨이 실행 상태를 확인하세요",
         toast_all_saved: "모든 설정이 성공적으로 저장되어 즉시 적용되었습니다!",
         toast_imported: "제공자 채널 [{name}] 마운트 완료!",
+        update_available_text: "새 버전 v{latest} 이용 가능 · 현재 버전 v{current}",
+        btn_copy_update: "업데이트 명령 복사",
+        link_view_release: "GitHub 보기 ➔",
+        toast_update_copied: "업데이트 명령 복사 완료: npx --yes github:allahyoxi/freedog-gateway#main start",
         prov_desc: {
           prov_cerebras: "초고속 처리량 추론 엔진 · 초고속 코드 생성",
           prov_deepseek: "최고 등급 코딩 모델 · 강력한 시스템 수준 추론",
@@ -1614,6 +1725,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const curModelInput = document.getElementById('modal-input-model');
       const curVal = curModelInput ? curModelInput.value.trim() : '';
       renderDropdownItems(modalFetchedModels, curVal);
+
+      if (latestVersionInfo && latestVersionInfo.hasUpdate) {
+        renderUpdateBanner(latestVersionInfo);
+      }
     }
 
     function showToast(text) {
@@ -2294,9 +2409,62 @@ export API_TIMEOUT_MS="2147483647"</pre>
       } catch (err) {}
     }
 
+    // 远端版本探测与新版本提示
+    let latestVersionInfo = null;
+
+    async function checkGatewayVersion() {
+      try {
+        const res = await fetch('/api/version-check');
+        if (res.ok) {
+          const info = await res.json();
+          latestVersionInfo = info;
+          if (info && info.hasUpdate) {
+            const badge = document.getElementById('update-badge');
+            if (badge) badge.style.display = 'inline-block';
+            renderUpdateBanner(info);
+          }
+        }
+      } catch (_) {}
+    }
+
+    function renderUpdateBanner(info) {
+      const banner = document.getElementById('update-notify-banner');
+      const textElem = document.getElementById('update-notify-text');
+      if (!banner || !info || !info.hasUpdate) return;
+
+      const txt = t('update_available_text')
+        .replace('{latest}', info.latestVersion)
+        .replace('{current}', info.currentVersion);
+      if (textElem) textElem.textContent = txt;
+      banner.style.display = 'flex';
+    }
+
+    function copyUpdateCommand() {
+      const cmd = (latestVersionInfo && latestVersionInfo.updateCommand) || 'npx --yes github:allahyoxi/freedog-gateway#main start';
+      navigator.clipboard.writeText(cmd).then(() => {
+        showToast(t('toast_update_copied'));
+      }).catch(() => {
+        showToast(t('toast_copied'));
+      });
+    }
+
+    function dismissUpdateBanner() {
+      const banner = document.getElementById('update-notify-banner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    function focusUpdateBanner() {
+      const banner = document.getElementById('update-notify-banner');
+      if (banner && latestVersionInfo && latestVersionInfo.hasUpdate) {
+        banner.style.display = 'flex';
+        banner.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
     // 初始化与网页直达挂载回调检测
     loadConfig().then(() => {
       switchLanguage(currentLang);
+      checkGatewayVersion();
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('imported')) {
         const impName = urlParams.get('name') || '';

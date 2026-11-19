@@ -7,6 +7,7 @@ import { ThinkingPatchManager } from './thinking-patch.mjs';
 import { UpstreamRouter } from './router.mjs';
 import { RequestLogger } from './logger.mjs';
 import { ConfigManager } from '../config/config-manager.mjs';
+import { getLocalVersion, checkLatestVersion } from './version-checker.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,13 +83,31 @@ export function createGatewayServer(options = {}) {
       res.end(JSON.stringify({
         status: 'ok',
         app: 'freedog-gateway',
-        version: '0.3.0',
+        version: getLocalVersion(),
         activeProvider: target.providerName,
         targetModel: target.targetModel,
         totalSavingsUsd: summary.savingsUsd,
         totalTokensProcessed: summary.totalTokens,
         providersCount: (cfg.providers || []).length
       }, null, 2));
+      return;
+    }
+
+    // 1.1 远端最新版本探测接口 [用于控制台自动化红点与升级指引提醒]
+    if (req.method === 'GET' && pathname === '/api/version-check') {
+      try {
+        const force = url.searchParams.get('force') === '1';
+        const info = await checkLatestVersion({ force });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(info, null, 2));
+      } catch (err) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          currentVersion: getLocalVersion(),
+          latestVersion: getLocalVersion(),
+          hasUpdate: false
+        }));
+      }
       return;
     }
 

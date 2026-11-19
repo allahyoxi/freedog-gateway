@@ -3,13 +3,15 @@ import { ConfigManager } from '../src/config/config-manager.mjs';
 import { CostLedger } from '../src/ledger/cost-ledger.mjs';
 import { createGatewayServer } from '../src/proxy/server.mjs';
 import { launchClaudeCode } from '../src/watchdog/launcher.mjs';
+import { getLocalVersion, checkLatestVersion } from '../src/proxy/version-checker.mjs';
 
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
 
 function printBanner() {
+  const ver = getLocalVersion();
   console.log('========================================================');
-  console.log('  🐾 FreeDog Gateway · 旺财算力网关 [v0.3.0]');
+  console.log(`  🐾 FreeDog Gateway · 旺财算力网关 [v${ver}]`);
   console.log('  连接 Claude Code 与全网免费模型的自愈型本地路由中心');
   console.log('  官网协同中台: https://freeaidog.com');
   console.log('========================================================');
@@ -45,6 +47,14 @@ async function handleStart() {
   console.log(`  - 📋  审计日志接口: http://${host}:${actualPort}/api/logs`);
   console.log(`  - 💰  累计账本看板: http://${host}:${actualPort}/api/stats\n`);
   console.log('提示：可直接在 Web 控制台配置各服务商，或新开终端执行 `freedog claude` 开启智能编码。\n');
+
+  // 静默异步查询远端最新版本，不阻塞网关冷启动
+  checkLatestVersion().then(info => {
+    if (info && info.hasUpdate) {
+      console.log(`\x1b[36m🚀 发现新版本 v${info.latestVersion} · 当前为 v${info.currentVersion}\x1b[0m`);
+      console.log(`\x1b[32m👉 运行 ${info.updateCommand} 即可无缝升级到最新版本！\x1b[0m\n`);
+    }
+  }).catch(() => {});
 }
 
 async function handleClaude() {
