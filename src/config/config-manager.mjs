@@ -37,8 +37,8 @@ export const DEFAULT_PRESET_PROVIDERS = [
     enabled: false,
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: '',
-    model: 'gemini-2.5-flash',
-    models: ['gemini-2.5-flash', 'gemini-2.5-pro'],
+    model: 'gemini-2.0-flash',
+    models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     protocol: 'openai',
     description: '100 万超大上下文代码工程重构 · 免费额度高'
   },

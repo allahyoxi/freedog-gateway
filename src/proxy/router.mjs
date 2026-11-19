@@ -238,7 +238,10 @@ export class UpstreamRouter {
         const rawText = await res.text();
         if (rawText) {
           try {
-            const json = JSON.parse(rawText);
+            let json = JSON.parse(rawText);
+            if (Array.isArray(json) && json.length > 0) {
+              json = json[0];
+            }
             detail = json.error?.message || json.message || (typeof json.error === 'string' ? json.error : '') || rawText.slice(0, 100);
           } catch (_) {
             detail = rawText.slice(0, 100);
