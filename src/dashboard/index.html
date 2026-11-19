@@ -94,6 +94,42 @@
       margin-top: 4px;
     }
 
+    .lang-bar {
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin: 12px 14px 6px 14px;
+    }
+
+    .lang-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .lang-btn:hover {
+      color: #e6edf3;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .lang-btn.active {
+      background: #238636;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
     .nav-list {
       list-style: none;
       padding: 16px 12px;
@@ -833,25 +869,34 @@
   <aside class="sidebar">
     <div class="brand">
       <h2>🐾 FreeDog Gateway</h2>
-      <span>Server Control · v0.3.0</span>
+      <span data-i18n="brand_subtitle">Server Control · v0.5.1</span>
     </div>
+
+    <!-- 四语言即时切换栏 -->
+    <div class="lang-bar">
+      <button type="button" class="lang-btn active" data-lang="zh" onclick="switchLanguage('zh')">🇨🇳 中文</button>
+      <button type="button" class="lang-btn" data-lang="en" onclick="switchLanguage('en')">🇺🇸 EN</button>
+      <button type="button" class="lang-btn" data-lang="ja" onclick="switchLanguage('ja')">🇯🇵 日本語</button>
+      <button type="button" class="lang-btn" data-lang="ko" onclick="switchLanguage('ko')">🇰🇷 한국어</button>
+    </div>
+
     <ul class="nav-list">
       <li class="nav-item active" onclick="switchTab('providers')">
-        <span>⚡</span> <span>Providers [渠道]</span>
+        <span>⚡</span> <span data-i18n="nav_providers">Providers [渠道]</span>
       </li>
       <li class="nav-item" onclick="switchTab('models')">
-        <span>🎯</span> <span>Model Config [映射]</span>
+        <span>🎯</span> <span data-i18n="nav_models">Model Config [映射]</span>
       </li>
       <li class="nav-item" onclick="switchTab('sessions')">
-        <span>📊</span> <span>Sessions & Ledger [账本]</span>
+        <span>📊</span> <span data-i18n="nav_sessions">Sessions & Ledger [账本]</span>
       </li>
       <li class="nav-item" onclick="switchTab('connect')">
-        <span>🚀</span> <span>Connect [一键接管]</span>
+        <span>🚀</span> <span data-i18n="nav_connect">Connect [一键接管]</span>
       </li>
     </ul>
     <div class="sidebar-footer">
       <a href="https://freeaidog.com" target="_blank">
-        <span>🌐</span> <span>FreeAI Dog 免费模型大厅</span>
+        <span>🌐</span> <span data-i18n="nav_freeai_hub">FreeAI Dog 免费模型大厅</span>
       </a>
     </div>
   </aside>
@@ -861,16 +906,16 @@
 
     <!-- 顶部导流与提示栏 -->
     <div class="top-banner">
-      <div>💡 <strong>一键直达免费 Key 领取教程：</strong>前往 FreeAI Dog 社区大厅查看全网大模型免费额度汇总</div>
-      <a href="https://freeaidog.com" target="_blank">前往领取 API Key ➔</a>
+      <div><strong data-i18n="banner_tip_lead">💡 一键直达免费 Key 领取教程：</strong><span data-i18n="banner_tip_text">前往 FreeAI Dog 社区大厅查看全网大模型免费额度汇总</span></div>
+      <a href="https://freeaidog.com" target="_blank" data-i18n="banner_btn">前往领取 API Key ➔</a>
     </div>
 
     <div class="content-area">
 
       <!-- 标签页 1: 服务商卡片管理 -->
       <div id="tab-providers" class="tab-content active">
-        <h1 class="section-title">Cloud providers</h1>
-        <div class="section-desc">已配置并激活的各家模型渠道，支持自由增减与一键编辑</div>
+        <h1 class="section-title" data-i18n="tab_providers_title">Cloud providers</h1>
+        <div class="section-desc" data-i18n="tab_providers_desc">已配置并激活的各家模型渠道，支持自由增减与一键编辑</div>
         <div class="providers-grid" id="providers-grid">
           <!-- 动态卡片 -->
         </div>
@@ -878,45 +923,45 @@
 
       <!-- 标签页 2: 模型对齐映射 -->
       <div id="tab-models" class="tab-content">
-        <h1 class="section-title">Model Config</h1>
-        <div class="section-desc">将 Claude Code 的请求对齐到指定服务商与具体模型</div>
+        <h1 class="section-title" data-i18n="tab_models_title">Model Config</h1>
+        <div class="section-desc" data-i18n="tab_models_desc">将 Claude Code 的请求对齐到指定服务商与具体模型</div>
 
         <div style="background-color: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; max-width: 600px;">
           <div class="form-group">
-            <label>主力重型编码模型映射 [对应 claude-3-7-sonnet 与 3-5-sonnet]</label>
+            <label data-i18n="label_sonnet">主力重型编码模型映射 [对应 claude-3-7-sonnet 与 3-5-sonnet]</label>
             <select id="select-sonnet" class="form-input" onchange="markUnsaved()">
               <!-- 动态填充 -->
             </select>
           </div>
           <div class="form-group" style="margin-top: 20px;">
-            <label>轻量快速任务模型映射 [对应 claude-3-5-haiku]</label>
+            <label data-i18n="label_haiku">轻量快速任务模型映射 [对应 claude-3-5-haiku]</label>
             <select id="select-haiku" class="form-input" onchange="markUnsaved()">
               <!-- 动态填充 -->
             </select>
           </div>
           <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); font-size: 13px; color: var(--text-muted);">
-            ✓ 自动开启会话级思维签名补丁 [支持 Gemini 与 DeepSeek 深度思考]<br>
-            ✓ 自动注入流式看门狗防掐断参数
+            <div data-i18n="features_info_1">✓ 自动开启会话级思维签名补丁 [支持 Gemini 与 DeepSeek 深度思考]</div>
+            <div data-i18n="features_info_2" style="margin-top: 4px;">✓ 自动注入流式看门狗防掐断参数</div>
           </div>
         </div>
       </div>
 
       <!-- 标签页 3: 会话与账本 -->
       <div id="tab-sessions" class="tab-content">
-        <h1 class="section-title">Sessions & Ledger</h1>
-        <div class="section-desc">本地实时审计流水与对标 Claude 3.7 Sonnet 价格的节省账本</div>
+        <h1 class="section-title" data-i18n="tab_sessions_title">Sessions & Ledger</h1>
+        <div class="section-desc" data-i18n="tab_sessions_desc">本地实时审计流水与对标 Claude 3.7 Sonnet 价格的节省账本</div>
 
         <div class="stat-cards">
           <div class="stat-card">
-            <div style="font-size: 12px; color: var(--text-muted);">累计节省美金额度</div>
+            <div style="font-size: 12px; color: var(--text-muted);" data-i18n="stat_savings">累计节省美金额度</div>
             <div class="stat-val" id="val-savings">$0.00</div>
           </div>
           <div class="stat-card">
-            <div style="font-size: 12px; color: var(--text-muted);">处理 Token 总量</div>
+            <div style="font-size: 12px; color: var(--text-muted);" data-i18n="stat_tokens">处理 Token 总量</div>
             <div class="stat-val" id="val-tokens" style="color: #58a6ff;">0</div>
           </div>
           <div class="stat-card">
-            <div style="font-size: 12px; color: var(--text-muted);">请求调用总数</div>
+            <div style="font-size: 12px; color: var(--text-muted);" data-i18n="stat_requests">请求调用总数</div>
             <div class="stat-val" id="val-requests" style="color: #a371f7;">0</div>
           </div>
         </div>
@@ -925,17 +970,17 @@
           <table>
             <thead>
               <tr>
-                <th>时间</th>
-                <th>请求模型</th>
-                <th>路由服务商</th>
-                <th>Token</th>
-                <th>节省金额</th>
-                <th>延迟</th>
-                <th>状态</th>
+                <th data-i18n="th_time">时间</th>
+                <th data-i18n="th_model">请求模型</th>
+                <th data-i18n="th_provider">路由服务商</th>
+                <th data-i18n="th_tokens">Token</th>
+                <th data-i18n="th_saved">节省金额</th>
+                <th data-i18n="th_latency">延迟</th>
+                <th data-i18n="th_status">状态</th>
               </tr>
             </thead>
             <tbody id="logs-tbody">
-              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无请求流水</td></tr>
+              <tr><td colspan="7" style="text-align: center; color: var(--text-muted);" data-i18n="td_no_logs">暂无请求流水</td></tr>
             </tbody>
           </table>
         </div>
@@ -943,16 +988,16 @@
 
       <!-- 标签页 4: 一键接管 -->
       <div id="tab-connect" class="tab-content">
-        <h1 class="section-title">Connect & Launch</h1>
-        <div class="section-desc">一键将官方 Claude Code 终端接管至本本地网关</div>
+        <h1 class="section-title" data-i18n="tab_connect_title">Connect & Launch</h1>
+        <div class="section-desc" data-i18n="tab_connect_desc">一键将官方 Claude Code 终端接管至本本地网关</div>
 
         <div style="background-color: var(--sidebar-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; max-width: 650px;">
-          <h3 style="font-size: 15px; margin-bottom: 12px;">方法 1：一键极速拉起 [推荐]</h3>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">在任意终端中执行以下指令，网关会自动注入防超时与看门狗拦截参数并拉起客户端：</p>
+          <h3 style="font-size: 15px; margin-bottom: 12px;" data-i18n="connect_m1_title">方法 1：一键极速拉起 [推荐]</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;" data-i18n="connect_m1_desc">在任意终端中执行以下指令，网关会自动注入防超时与看门狗拦截参数并拉起客户端：</p>
           <pre style="background: #0d1117; padding: 12px; border-radius: 6px; font-size: 13px; color: #3fb950; margin-bottom: 24px;">freedog claude</pre>
 
-          <h3 style="font-size: 15px; margin-bottom: 12px;">方法 2：手动导出环境变量</h3>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">适用于 Codex、Cline、Antigravity CLI 或自定义脚本：</p>
+          <h3 style="font-size: 15px; margin-bottom: 12px;" data-i18n="connect_m2_title">方法 2：手动导出环境变量</h3>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;" data-i18n="connect_m2_desc">适用于 Codex、Cline、Antigravity CLI 或自定义脚本：</p>
           <pre style="background: #0d1117; padding: 12px; border-radius: 6px; font-size: 13px; color: #58a6ff;">export ANTHROPIC_BASE_URL="http://127.0.0.1:8000"
 export ANTHROPIC_API_KEY="freedog-local"
 export CLAUDE_ENABLE_STREAM_WATCHDOG="0"
@@ -968,7 +1013,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         <div class="status-text" id="bottom-status">No changes</div>
         <div class="path-text" id="config-path">~/.freedog/config.json</div>
       </div>
-      <button class="btn-apply" onclick="applyChanges(true)">Apply</button>
+      <button class="btn-apply" onclick="applyChanges(true)" data-i18n="btn_apply">Apply</button>
     </div>
 
   </main>
@@ -979,24 +1024,24 @@ export API_TIMEOUT_MS="2147483647"</pre>
       <div class="modal-title" id="modal-provider-name">Edit Provider</div>
 
       <div class="form-group">
-        <label>服务商名称</label>
+        <label data-i18n="label_name">服务商名称</label>
         <input type="text" id="modal-input-name" class="form-input" placeholder="例如: 硅基流动 / 深度求索 / 局域网反代">
       </div>
 
       <div class="form-group">
-        <label>接口地址 [Base URL]</label>
+        <label data-i18n="label_url">接口地址 [Base URL]</label>
         <input type="text" id="modal-input-url" class="form-input" placeholder="例如: https://api.siliconflow.cn/v1">
       </div>
 
       <div class="form-group">
-        <label>授权密钥 [API Key]</label>
+        <label data-i18n="label_key">授权密钥 [API Key]</label>
         <input type="password" id="modal-input-key" class="form-input" placeholder="sk-... [留空则免密或使用环境变量]">
       </div>
 
       <div class="form-group" style="position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <label style="margin-bottom: 0;">默认目标模型标识 [Model ID]</label>
-          <button type="button" class="btn-fetch-models" id="btn-fetch-models" onclick="fetchModelsForModal()">🔄 拉取可用模型</button>
+          <label style="margin-bottom: 0;" data-i18n="label_model">默认目标模型标识 [Model ID]</label>
+          <button type="button" class="btn-fetch-models" id="btn-fetch-models" onclick="fetchModelsForModal()" data-i18n="btn_fetch_models">🔄 拉取可用模型</button>
         </div>
         <div class="model-select-container">
           <input type="text" id="modal-input-model" class="form-input model-input-field" placeholder="输入或下拉选择模型，例如: gemini-3.8-flash" autocomplete="off" onfocus="openModelDropdown()" oninput="onModelInput(this.value)">
@@ -1016,7 +1061,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
       </div>
 
       <div class="switch-row">
-        <span style="font-size: 13px;">启用此服务商分流</span>
+        <span style="font-size: 13px;" data-i18n="label_enable">启用此服务商分流</span>
         <input type="checkbox" id="modal-input-enabled" style="transform: scale(1.3); cursor: pointer;">
       </div>
 
@@ -1025,12 +1070,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       <div class="modal-actions">
         <div>
-          <button type="button" class="btn-delete-modal" id="btn-delete-provider" onclick="deleteCurrentProvider()">删除渠道</button>
+          <button type="button" class="btn-delete-modal" id="btn-delete-provider" onclick="deleteCurrentProvider()" data-i18n="btn_delete">删除渠道</button>
         </div>
         <div style="display: flex; gap: 10px;">
-          <button type="button" class="btn-cancel-modal" onclick="closeModal()">取消</button>
-          <button type="button" class="btn-test-modal" id="btn-modal-test" onclick="testModalConnection()">⚡ 测试连接</button>
-          <button type="button" class="btn-save-modal" onclick="saveModal()">确定</button>
+          <button type="button" class="btn-cancel-modal" onclick="closeModal()" data-i18n="btn_cancel">取消</button>
+          <button type="button" class="btn-test-modal" id="btn-modal-test" onclick="testModalConnection()" data-i18n="btn_test">⚡ 测试连接</button>
+          <button type="button" class="btn-save-modal" onclick="saveModal()" data-i18n="btn_save">确定</button>
         </div>
       </div>
     </div>
@@ -1040,6 +1085,398 @@ export API_TIMEOUT_MS="2147483647"</pre>
     let currentConfig = { providers: [] };
     let hasUnsavedChanges = false;
     let editingProviderId = null;
+
+    const I18N = {
+      zh: {
+        brand_subtitle: "网关服务控制台 · v0.5.1",
+        nav_providers: "Providers [渠道]",
+        nav_models: "Model Config [映射]",
+        nav_sessions: "Sessions & Ledger [账本]",
+        nav_connect: "Connect [一键接管]",
+        nav_freeai_hub: "FreeAI Dog 免费模型大厅",
+        banner_tip_lead: "💡 一键直达免费 Key 领取教程：",
+        banner_tip_text: "前往 FreeAI Dog 社区大厅查看全网大模型免费额度汇总",
+        banner_btn: "前往领取 API Key ➔",
+        tab_providers_title: "Cloud providers",
+        tab_providers_desc: "已配置并激活的各家模型渠道，支持自由增减与一键编辑",
+        tab_models_title: "Model Config",
+        tab_models_desc: "将 Claude Code 的请求对齐到指定服务商与具体模型",
+        tab_sessions_title: "Sessions & Ledger",
+        tab_sessions_desc: "本地实时审计流水与对标 Claude 3.7 Sonnet 价格的节省账本",
+        tab_connect_title: "Connect & Launch",
+        tab_connect_desc: "一键将官方 Claude Code 终端接管至本本地网关",
+        card_active: "Active",
+        card_configured: "已配置",
+        card_unconfigured: "未配置",
+        card_models_unassigned: "未设定模型",
+        card_btn_ping: "⚡ Ping",
+        card_btn_edit: "Edit",
+        card_btn_add: "添加自定义渠道",
+        label_sonnet: "主力重型编码模型映射 [对应 claude-3-7-sonnet 与 3-5-sonnet]",
+        label_haiku: "轻量快速任务模型映射 [对应 claude-3-5-haiku]",
+        features_info_1: "✓ 自动开启会话级思维签名补丁 [支持 Gemini 与 DeepSeek 深度思考]",
+        features_info_2: "✓ 自动注入流式看门狗防掐断参数",
+        stat_savings: "累计节省美金额度",
+        stat_tokens: "处理 Token 总量",
+        stat_requests: "请求调用总数",
+        th_time: "时间",
+        th_model: "请求模型",
+        th_provider: "路由服务商",
+        th_tokens: "Token",
+        th_saved: "节省金额",
+        th_latency: "延迟",
+        th_status: "状态",
+        td_no_logs: "暂无请求流水",
+        connect_m1_title: "方法 1：一键极速拉起 [推荐]",
+        connect_m1_desc: "在任意终端中执行以下指令，网关会自动注入防超时与看门狗拦截参数并拉起客户端：",
+        connect_m2_title: "方法 2：手动导出环境变量",
+        connect_m2_desc: "适用于 Codex、Cline、Antigravity CLI 或自定义脚本：",
+        status_no_changes: "No changes",
+        status_unsaved: "Unsaved changes",
+        btn_apply: "Apply",
+        modal_title_edit: "编辑渠道 · ",
+        modal_title_add: "添加自定义渠道",
+        label_name: "服务商名称",
+        label_url: "接口地址 [Base URL]",
+        label_key: "授权密钥 [API Key]",
+        label_model: "默认目标模型标识 [Model ID]",
+        btn_fetch_models: "🔄 拉取可用模型",
+        btn_fetching_models: "🔄 正在拉取...",
+        dropdown_search_placeholder: "🔍 快速搜索过滤模型...",
+        dropdown_empty: "暂无拉取的模型，请点击上方“拉取可用模型”",
+        dropdown_more: "+ 展开更多 {n} 款 ▼",
+        label_enable: "启用此服务商分流",
+        btn_delete: "删除渠道",
+        btn_cancel: "取消",
+        btn_test: "⚡ 测试连接",
+        btn_testing: "测试中...",
+        btn_save: "确定",
+        placeholder_name: "例如: 硅基流动 / 深度求索 / 局域网反代",
+        placeholder_key: "sk-... [留空则免密或使用环境变量]",
+        placeholder_model: "例如: deepseek-ai/DeepSeek-V3",
+        toast_saved: "配置已成功保存并立即生效！",
+        toast_ping_pass: "连通测试通过",
+        toast_ping_tip: "连通测试提示: ",
+        toast_copied: "已复制到剪贴板",
+        disabled_suffix: " - 未启用",
+        prov_desc: {
+          prov_cerebras: "超高吞吐推理引擎 · 极速代码生成",
+          prov_deepseek: "原厂顶级代码大模型 · 具备强悍系统级推理",
+          prov_gemini: "100 万超大上下文代码工程重构 · 免费额度高",
+          prov_groq: "LPUs 毫秒级闪电推理 · 免费层高吞吐",
+          prov_huggingface: "全球开源模型聚集地 · Serverless 推理端点",
+          prov_mistral: "Codestral 专有代码大模型 · 原生 FIM 支持",
+          prov_nvidia: "英伟达云端微服务 · 企业级高可用推理",
+          prov_opencode: "专为编程 Agent 设计的高速路由通道",
+          prov_ollama: "纯本地显卡离线运行 · 零注册 · 零隐私泄漏"
+        }
+      },
+      en: {
+        brand_subtitle: "Server Control · v0.5.1",
+        nav_providers: "Providers",
+        nav_models: "Model Config",
+        nav_sessions: "Sessions & Ledger",
+        nav_connect: "Connect & Launch",
+        nav_freeai_hub: "FreeAI Dog Hub",
+        banner_tip_lead: "💡 Free API Keys Guide: ",
+        banner_tip_text: "Explore global free tier AI models and limits at FreeAI Dog Hub",
+        banner_btn: "Claim Free Keys ➔",
+        tab_providers_title: "Cloud providers",
+        tab_providers_desc: "Configured and active model routes, customizable with 1-click test",
+        tab_models_title: "Model Config",
+        tab_models_desc: "Route Claude Code requests to specific providers and target models",
+        tab_sessions_title: "Sessions & Ledger",
+        tab_sessions_desc: "Local real-time audit logs and cost savings vs official Claude pricing",
+        tab_connect_title: "Connect & Launch",
+        tab_connect_desc: "Instantly route official Claude Code CLI through FreeDog Gateway",
+        card_active: "Active",
+        card_configured: "Configured",
+        card_unconfigured: "Unconfigured",
+        card_models_unassigned: "No model assigned",
+        card_btn_ping: "⚡ Ping",
+        card_btn_edit: "Edit",
+        card_btn_add: "Add Custom Provider",
+        label_sonnet: "Primary heavy coding model [claude-3-7-sonnet / 3-5-sonnet]",
+        label_haiku: "Fast lightweight task model [claude-3-5-haiku]",
+        features_info_1: "✓ Automatic thinking signature patch [supports Gemini & DeepSeek reasoning]",
+        features_info_2: "✓ Automatic stream watchdog bypass parameters injected",
+        stat_savings: "Total Cost Saved",
+        stat_tokens: "Total Tokens Processed",
+        stat_requests: "Total Requests",
+        th_time: "Time",
+        th_model: "Requested Model",
+        th_provider: "Routed Provider",
+        th_tokens: "Tokens",
+        th_saved: "Savings",
+        th_latency: "Latency",
+        th_status: "Status",
+        td_no_logs: "No session logs yet",
+        connect_m1_title: "Method 1: Instant Launch [Recommended]",
+        connect_m1_desc: "Run this command in any terminal; watchdog bypass parameters will be injected automatically:",
+        connect_m2_title: "Method 2: Export Environment Variables",
+        connect_m2_desc: "For Codex, Cline, Antigravity CLI, or custom agent scripts:",
+        status_no_changes: "No changes",
+        status_unsaved: "Unsaved changes",
+        btn_apply: "Apply",
+        modal_title_edit: "Edit Provider · ",
+        modal_title_add: "Add Custom Provider",
+        label_name: "Provider Name",
+        label_url: "Base URL",
+        label_key: "API Key",
+        label_model: "Target Model ID",
+        btn_fetch_models: "🔄 Fetch Models",
+        btn_fetching_models: "🔄 Fetching...",
+        dropdown_search_placeholder: "🔍 Search models...",
+        dropdown_empty: "No models fetched. Click \"Fetch Models\" above",
+        dropdown_more: "+ Expand more {n} models ▼",
+        label_enable: "Enable this provider route",
+        btn_delete: "Delete Provider",
+        btn_cancel: "Cancel",
+        btn_test: "⚡ Test Ping",
+        btn_testing: "Testing...",
+        btn_save: "Save",
+        placeholder_name: "e.g. SiliconFlow / DeepSeek / Local Ollama",
+        placeholder_key: "sk-... [Leave empty for keyless or env vars]",
+        placeholder_model: "e.g. deepseek-ai/DeepSeek-V3",
+        toast_saved: "Configuration applied and saved to disk!",
+        toast_ping_pass: "Connection test passed",
+        toast_ping_tip: "Connection test notice: ",
+        toast_copied: "Copied to clipboard",
+        disabled_suffix: " - Disabled",
+        prov_desc: {
+          prov_cerebras: "Ultra-high throughput inference engine · Blazing code generation",
+          prov_deepseek: "Native flagship coding LLM · Robust system-level reasoning",
+          prov_gemini: "1M ultra-large context refactoring · Generous free tier",
+          prov_groq: "LPU millisecond lightning inference · High free throughput",
+          prov_huggingface: "Global open-source hub · Serverless inference endpoints",
+          prov_mistral: "Codestral dedicated coding LLM · Native FIM support",
+          prov_nvidia: "NVIDIA Cloud Microservices · Enterprise high availability",
+          prov_opencode: "High-speed routing tunnel tailored for coding agents",
+          prov_ollama: "100% offline local GPU execution · Zero signup · Pure privacy"
+        }
+      },
+      ja: {
+        brand_subtitle: "サーバーコントロール · v0.5.1",
+        nav_providers: "プロバイダー [Providers]",
+        nav_models: "モデル設定 [Mapping]",
+        nav_sessions: "セッション & 台帳 [Ledger]",
+        nav_connect: "ワンクリック接続 [Connect]",
+        nav_freeai_hub: "FreeAI Dog 無料ハブ",
+        banner_tip_lead: "💡 無料API Key取得ガイド: ",
+        banner_tip_text: "FreeAI Dogコミュニティで世界中の無料AIモデル枠を確認",
+        banner_btn: "API Keyを取得 ➔",
+        tab_providers_title: "Cloud providers",
+        tab_providers_desc: "設定済みのアクティブなモデルプロバイダー、自由に追加・編集可能",
+        tab_models_title: "Model Config",
+        tab_models_desc: "Claude Codeのリクエストを指定プロバイダーとモデルにマッピング",
+        tab_sessions_title: "Sessions & Ledger",
+        tab_sessions_desc: "リアルタイムローカル監査ログと公式Claude対比のコスト節約台帳",
+        tab_connect_title: "Connect & Launch",
+        tab_connect_desc: "公式Claude Codeターミナルをローカルゲートウェイにワンクリック接続",
+        card_active: "有効",
+        card_configured: "設定済み",
+        card_unconfigured: "未設定",
+        card_models_unassigned: "モデル未設定",
+        card_btn_ping: "⚡ Ping",
+        card_btn_edit: "編集",
+        card_btn_add: "カスタムプロバイダー追加",
+        label_sonnet: "主力コーディングモデルマッピング [claude-3-7-sonnet / 3-5-sonnet]",
+        label_haiku: "高速軽量タスクモデルマッピング [claude-3-5-haiku]",
+        features_info_1: "✓ 思考署名パッチ自動適用 [Gemini & DeepSeek推論対応]",
+        features_info_2: "✓ ストリーミングウォッチドッグ切断防止パラメータ自動注入",
+        stat_savings: "累計節約額",
+        stat_tokens: "処理トークン総数",
+        stat_requests: "リクエスト総数",
+        th_time: "時間",
+        th_model: "リクエストモデル",
+        th_provider: "ルーティング先",
+        th_tokens: "トークン",
+        th_saved: "節約額",
+        th_latency: "遅延",
+        th_status: "ステータス",
+        td_no_logs: "履歴ログはありません",
+        connect_m1_title: "方法 1: ワンクリック起動 [推奨]",
+        connect_m1_desc: "ターミナルで実行すると、タイムアウト防止パラメータが注入されて起動します:",
+        connect_m2_title: "方法 2: 環境変数を手動エクスポート",
+        connect_m2_desc: "Codex、Cline、Antigravity CLI またはカスタムスクリプト用:",
+        status_no_changes: "変更なし",
+        status_unsaved: "未保存の変更",
+        btn_apply: "適用",
+        modal_title_edit: "プロバイダー編集 · ",
+        modal_title_add: "カスタムプロバイダー追加",
+        label_name: "プロバイダー名",
+        label_url: "APIベースURL [Base URL]",
+        label_key: "APIキー [API Key]",
+        label_model: "デフォルトモデルID [Model ID]",
+        btn_fetch_models: "🔄 モデル取得",
+        btn_fetching_models: "🔄 取得中...",
+        dropdown_search_placeholder: "🔍 モデルを高速検索...",
+        dropdown_empty: "取得済みモデルはありません。上の「モデル取得」をクリックしてください",
+        dropdown_more: "+ さらに {n} 件を展開 ▼",
+        label_enable: "このプロバイダーを有効化",
+        btn_delete: "削除",
+        btn_cancel: "キャンセル",
+        btn_test: "⚡ 接続テスト",
+        btn_testing: "テスト中...",
+        btn_save: "保存",
+        placeholder_name: "例: SiliconFlow / DeepSeek / ローカルOllama",
+        placeholder_key: "sk-... [空欄で環境変数または認証なし]",
+        placeholder_model: "例: deepseek-ai/DeepSeek-V3",
+        toast_saved: "設定が適用されディスクに保存されました！",
+        toast_ping_pass: "接続テスト成功",
+        toast_ping_tip: "接続テスト通知: ",
+        toast_copied: "クリップボードにコピーしました",
+        disabled_suffix: " - 無効",
+        prov_desc: {
+          prov_cerebras: "超高スループット推論エンジン · 高速コード生成",
+          prov_deepseek: "公式フラグシップコーディングモデル · 強力な推論能力",
+          prov_gemini: "100万トークン超大コンテキスト · 豊富な無料枠",
+          prov_groq: "LPUミリ秒単位の超高速推論 · 高スループット無料枠",
+          prov_huggingface: "グローバルオープンソース拠点 · サーバーレス推論",
+          prov_mistral: "Codestralコード特化モデル · ネイティブFIM対応",
+          prov_nvidia: "NVIDIAクラウドマイクロサービス · エンタープライズ高可用性",
+          prov_opencode: "プログラミングAgent向け高速ルーティング",
+          prov_ollama: "完全ローカルGPUオフライン実行 · 登録不要 · プライバシー保護"
+        }
+      },
+      ko: {
+        brand_subtitle: "서버 컨트롤 · v0.5.1",
+        nav_providers: "제공업체 [Providers]",
+        nav_models: "모델 설정 [Mapping]",
+        nav_sessions: "세션 & 원장 [Ledger]",
+        nav_connect: "원클릭 연동 [Connect]",
+        nav_freeai_hub: "FreeAI Dog 무료 허브",
+        banner_tip_lead: "💡 무료 API Key 발급 튜토리얼: ",
+        banner_tip_text: "FreeAI Dog 커뮤니티에서 글로벌 무료 AI 모델 한도 확인",
+        banner_btn: "API Key 받으러 가기 ➔",
+        tab_providers_title: "Cloud providers",
+        tab_providers_desc: "설정 및 활성화된 모델 제공업체, 자유로운 추가 및 원클릭 편집 지원",
+        tab_models_title: "Model Config",
+        tab_models_desc: "Claude Code 요청을 특정 제공업체 및 모델로 매핑",
+        tab_sessions_title: "Sessions & Ledger",
+        tab_sessions_desc: "실시간 로컬 감사 로그 및 공식 Claude 가격 대비 절감 원장",
+        tab_connect_title: "Connect & Launch",
+        tab_connect_desc: "공식 Claude Code 터미널을 로컬 게이트웨이로 원클릭 연동",
+        card_active: "활성",
+        card_configured: "설정됨",
+        card_unconfigured: "미설정",
+        card_models_unassigned: "모델 미지정",
+        card_btn_ping: "⚡ Ping",
+        card_btn_edit: "편집",
+        card_btn_add: "커스텀 제공업체 추가",
+        label_sonnet: "주력 코딩 모델 매핑 [claude-3-7-sonnet / 3-5-sonnet]",
+        label_haiku: "경량 고속 작업 모델 매핑 [claude-3-5-haiku]",
+        features_info_1: "✓ 생각 서명 패치 자동 적용 [Gemini & DeepSeek 추론 지원]",
+        features_info_2: "✓ 스트리밍 워치독 연결 끊김 방지 파라미터 자동 주입",
+        stat_savings: "총 절감 비용",
+        stat_tokens: "총 처리 토큰",
+        stat_requests: "총 요청 수",
+        th_time: "시간",
+        th_model: "요청 모델",
+        th_provider: "라우팅 제공업체",
+        th_tokens: "토큰",
+        th_saved: "절감액",
+        th_latency: "지연",
+        th_status: "상태",
+        td_no_logs: "요청 로그가 없습니다",
+        connect_m1_title: "방법 1: 원클릭 즉시 실행 [권장]",
+        connect_m1_desc: "터미널에서 아래 명령을 실행하면 타임아웃 방지 파라미터가 자동 주입되며 실행됩니다:",
+        connect_m2_title: "방법 2: 환경 변수 수동 내보내기",
+        connect_m2_desc: "Codex, Cline, Antigravity CLI 또는 커스텀 스크립트용:",
+        status_no_changes: "변경 사항 없음",
+        status_unsaved: "저장되지 않은 변경 사항",
+        btn_apply: "적용",
+        modal_title_edit: "제공업체 편집 · ",
+        modal_title_add: "커스텀 제공업체 추가",
+        label_name: "제공업체 이름",
+        label_url: "API 베이스 URL [Base URL]",
+        label_key: "API 키 [API Key]",
+        label_model: "기본 대상 모델 ID [Model ID]",
+        btn_fetch_models: "🔄 모델 가져오기",
+        btn_fetching_models: "🔄 가져오는 중...",
+        dropdown_search_placeholder: "🔍 모델 빠른 검색...",
+        dropdown_empty: "가져온 모델이 없습니다. 위의 \"모델 가져오기\"를 클릭하세요",
+        dropdown_more: "+ 추가 {n}개 펼치기 ▼",
+        label_enable: "이 제공업체 라우팅 활성화",
+        btn_delete: "제공업체 삭제",
+        btn_cancel: "취소",
+        btn_test: "⚡ 연결 테스트",
+        btn_testing: "테스트 중...",
+        btn_save: "확인",
+        placeholder_name: "예: SiliconFlow / DeepSeek / 로컬 Ollama",
+        placeholder_key: "sk-... [환경 변수 또는 비밀번호 없음 사용 시 비워둠]",
+        placeholder_model: "예: deepseek-ai/DeepSeek-V3",
+        toast_saved: "설정이 적용되어 디스크에 저장되었습니다!",
+        toast_ping_pass: "연결 테스트 통과",
+        toast_ping_tip: "연결 테스트 안내: ",
+        toast_copied: "클립보드에 복사되었습니다",
+        disabled_suffix: " - 비활성화",
+        prov_desc: {
+          prov_cerebras: "초고속 처리량 추론 엔진 · 초고속 코드 생성",
+          prov_deepseek: "최고 등급 코딩 모델 · 강력한 시스템 수준 추론",
+          prov_gemini: "100만 대규모 컨텍스트 리팩터링 · 넉넉한 무료 한도",
+          prov_groq: "LPU 밀리초 단위 초고속 추론 · 무료 고처리량",
+          prov_huggingface: "글로벌 오픈소스 허브 · 서버리스 추론 엔드포인트",
+          prov_mistral: "Codestral 코드 특화 모델 · 기본 FIM 지원",
+          prov_nvidia: "NVIDIA 클라우드 마이크로서비스 · 엔터프라이즈 고가용성",
+          prov_opencode: "프로그래밍 Agent 전용 고속 라우팅 터널",
+          prov_ollama: "완전 로컬 GPU 오프라인 실행 · 가입 불필요 · 프라이버시 보호"
+        }
+      }
+    };
+
+    let currentLang = 'zh';
+    try {
+      const savedLang = localStorage.getItem('freedog_lang');
+      if (savedLang && I18N[savedLang]) {
+        currentLang = savedLang;
+      }
+    } catch (_) {}
+
+    function t(key) {
+      if (I18N[currentLang] && I18N[currentLang][key] !== undefined) {
+        return I18N[currentLang][key];
+      }
+      if (I18N.zh && I18N.zh[key] !== undefined) {
+        return I18N.zh[key];
+      }
+      return key;
+    }
+
+    function switchLanguage(lang) {
+      if (!I18N[lang]) return;
+      currentLang = lang;
+      try {
+        localStorage.setItem('freedog_lang', lang);
+      } catch (_) {}
+
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const text = t(key);
+        if (text) {
+          el.innerHTML = text;
+        }
+      });
+
+      const filterInput = document.getElementById('model-dropdown-filter');
+      if (filterInput) filterInput.placeholder = t('dropdown_search_placeholder');
+
+      renderProviders();
+      renderModelSelects();
+      if (hasUnsavedChanges) {
+        markUnsaved();
+      } else {
+        markSaved();
+      }
+
+      const curModelInput = document.getElementById('modal-input-model');
+      const curVal = curModelInput ? curModelInput.value.trim() : '';
+      renderDropdownItems(modalFetchedModels, curVal);
+    }
 
     function showToast(text) {
       const toast = document.getElementById('toast-msg');
@@ -1071,14 +1508,14 @@ export API_TIMEOUT_MS="2147483647"</pre>
     function markUnsaved() {
       hasUnsavedChanges = true;
       const statusEl = document.getElementById('bottom-status');
-      statusEl.textContent = 'Unsaved changes';
+      statusEl.textContent = t('status_unsaved');
       statusEl.classList.add('unsaved');
     }
 
     function markSaved() {
       hasUnsavedChanges = false;
       const statusEl = document.getElementById('bottom-status');
-      statusEl.textContent = 'No changes';
+      statusEl.textContent = t('status_no_changes');
       statusEl.classList.remove('unsaved');
     }
 
@@ -1107,6 +1544,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
         const isConfigured = Boolean(p.apiKey || p.name === 'Local Ollama' || p.enabled);
         const card = document.createElement('div');
         card.className = 'provider-card' + (p.enabled ? ' enabled' : '');
+        
+        const localizedDesc = (I18N[currentLang] && I18N[currentLang].prov_desc && I18N[currentLang].prov_desc[p.id]) || p.description || p.baseUrl;
+        const statusText = p.enabled ? t('card_active') : (isConfigured ? t('card_configured') : t('card_unconfigured'));
+
         card.innerHTML = `
           <div>
             <div class="provider-header">
@@ -1114,17 +1555,17 @@ export API_TIMEOUT_MS="2147483647"</pre>
                 <span>${p.name}</span>
               </div>
               <span class="provider-badge ${p.enabled ? 'active' : ''}">
-                ${p.enabled ? 'Active' : (isConfigured ? 'Configured' : 'Unconfigured')}
+                ${statusText}
               </span>
             </div>
-            <div class="provider-desc">${p.description || p.baseUrl}</div>
+            <div class="provider-desc">${localizedDesc}</div>
             <div id="ping-badge-${p.id}"></div>
           </div>
           <div class="provider-footer">
-            <span class="models-count">${p.model || '未设定模型'}</span>
+            <span class="models-count">${p.model || t('card_models_unassigned')}</span>
             <div style="display: flex; gap: 8px;">
-              <button class="btn-ping" id="btn-ping-${p.id}" onclick="pingProviderCard('${p.id}', event)">⚡ Ping</button>
-              <button class="btn-edit" onclick="openEditModal('${p.id}')">Edit</button>
+              <button class="btn-ping" id="btn-ping-${p.id}" onclick="pingProviderCard('${p.id}', event)">${t('card_btn_ping')}</button>
+              <button class="btn-edit" onclick="openEditModal('${p.id}')">${t('card_btn_edit')}</button>
             </div>
           </div>
         `;
@@ -1137,7 +1578,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
       addCard.onclick = openAddModal;
       addCard.innerHTML = `
         <div style="font-size: 28px; color: var(--text-muted);">+</div>
-        <span>添加自定义渠道</span>
+        <span>${t('card_btn_add')}</span>
       `;
       grid.appendChild(addCard);
     }
@@ -1150,16 +1591,18 @@ export API_TIMEOUT_MS="2147483647"</pre>
       sonnetSelect.innerHTML = '';
       haikuSelect.innerHTML = '';
 
+      const disabledSuffix = t('disabled_suffix');
+
       (currentConfig.providers || []).forEach(p => {
         const opt1 = document.createElement('option');
         opt1.value = p.id;
-        opt1.textContent = `${p.name} [${p.model}]` + (p.enabled ? '' : ' - 未启用');
+        opt1.textContent = `${p.name} [${p.model}]` + (p.enabled ? '' : disabledSuffix);
         opt1.selected = (p.id === currentConfig.sonnetProviderId);
         sonnetSelect.appendChild(opt1);
 
         const opt2 = document.createElement('option');
         opt2.value = p.id;
-        opt2.textContent = `${p.name} [${p.model}]` + (p.enabled ? '' : ' - 未启用');
+        opt2.textContent = `${p.name} [${p.model}]` + (p.enabled ? '' : disabledSuffix);
         opt2.selected = (p.id === currentConfig.haikuProviderId);
         haikuSelect.appendChild(opt2);
       });
@@ -1180,18 +1623,18 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const p = (currentConfig.providers || []).find(item => item.id === providerId);
       if (!p) return;
 
-      document.getElementById('modal-provider-name').textContent = '编辑渠道 · ' + p.name;
+      document.getElementById('modal-provider-name').textContent = t('modal_title_edit') + p.name;
       document.getElementById('modal-input-name').value = p.name || '';
-      document.getElementById('modal-input-name').placeholder = '服务商名称';
+      document.getElementById('modal-input-name').placeholder = t('label_name');
 
       document.getElementById('modal-input-url').value = p.baseUrl || '';
       document.getElementById('modal-input-url').placeholder = 'https://api.openai.com/v1';
 
       document.getElementById('modal-input-key').value = p.apiKey || '';
-      document.getElementById('modal-input-key').placeholder = 'sk-... [留空则免密或使用环境变量]';
+      document.getElementById('modal-input-key').placeholder = t('placeholder_key');
 
       document.getElementById('modal-input-model').value = p.model || '';
-      document.getElementById('modal-input-model').placeholder = '例如: deepseek-ai/DeepSeek-V3';
+      document.getElementById('modal-input-model').placeholder = t('placeholder_model');
 
       document.getElementById('modal-input-enabled').checked = Boolean(p.enabled);
 
@@ -1204,20 +1647,20 @@ export API_TIMEOUT_MS="2147483647"</pre>
     function openAddModal() {
       editingProviderId = null;
       resetModalTestBanner();
-      document.getElementById('modal-provider-name').textContent = '添加自定义渠道';
+      document.getElementById('modal-provider-name').textContent = t('modal_title_add');
 
       // 关键：清空实际值，全部改为浅灰提示 placeholder，点击直接输入无需手动删除！
       document.getElementById('modal-input-name').value = '';
-      document.getElementById('modal-input-name').placeholder = '例如: 硅基流动 / 深度求索 / 局域网反代';
+      document.getElementById('modal-input-name').placeholder = t('placeholder_name');
 
       document.getElementById('modal-input-url').value = '';
-      document.getElementById('modal-input-url').placeholder = '例如: https://api.siliconflow.cn/v1';
+      document.getElementById('modal-input-url').placeholder = 'https://api.openai.com/v1';
 
       document.getElementById('modal-input-key').value = '';
-      document.getElementById('modal-input-key').placeholder = 'sk-... [留空则免密或使用环境变量]';
+      document.getElementById('modal-input-key').placeholder = t('placeholder_key');
 
       document.getElementById('modal-input-model').value = '';
-      document.getElementById('modal-input-model').placeholder = '例如: deepseek-ai/DeepSeek-V3';
+      document.getElementById('modal-input-model').placeholder = t('placeholder_model');
 
       document.getElementById('modal-input-enabled').checked = true;
 
@@ -1687,7 +2130,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
           const tbody = document.getElementById('logs-tbody');
           tbody.innerHTML = '';
           if (!data.logs || data.logs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">暂无请求流水</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">${t('td_no_logs')}</td></tr>`;
             return;
           }
           data.logs.forEach(l => {
@@ -1709,11 +2152,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
     // 初始化与网页直达挂载回调检测
     loadConfig().then(() => {
+      switchLanguage(currentLang);
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('imported')) {
         const impName = urlParams.get('name') || '';
         window.history.replaceState({}, document.title, '/');
-        showToast(`已成功挂载服务商渠道 [${impName}]！`);
+        showToast(currentLang === 'zh' ? `已成功挂载服务商渠道 [${impName}]！` : `Successfully imported provider [${impName}]!`);
         const found = (currentConfig.providers || []).find(p => p.name === impName);
         if (found) {
           setTimeout(() => {
