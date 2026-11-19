@@ -1,13 +1,18 @@
 {
   "name": "freedog-gateway",
-  "version": "0.4.0",
-  "description": "Provider-driven local AI agent proxy connecting Claude Code and Codex to free upstream models with automatic failover and token ledger",
+  "version": "0.6.0",
+  "description": "Provider-driven local AI agent proxy connecting Claude Code and Codex to free upstream models with automatic failover, real-time Ping latency, dynamic model fetch and quad-language WebUI",
   "type": "module",
   "main": "src/index.mjs",
   "bin": {
     "freedog": "./bin/freedog.mjs",
     "freedog-gateway": "./bin/freedog.mjs"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/allahyoxi/freedog-gateway.git"
+  },
+  "homepage": "https://freeaidog.com",
   "scripts": {
     "start": "node bin/freedog.mjs start",
     "dev": "node bin/freedog.mjs start --verbose",
