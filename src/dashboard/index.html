@@ -869,7 +869,7 @@
   <aside class="sidebar">
     <div class="brand">
       <h2>🐾 FreeDog Gateway</h2>
-      <span data-i18n="brand_subtitle">Server Control · v0.5.1</span>
+      <span data-i18n="brand_subtitle">Server Control · v0.6.1</span>
     </div>
 
     <!-- 四语言即时切换栏 -->
@@ -1088,7 +1088,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
     const I18N = {
       zh: {
-        brand_subtitle: "网关服务控制台 · v0.5.1",
+        brand_subtitle: "网关服务控制台 · v0.6.1",
         nav_providers: "Providers [渠道]",
         nav_models: "Model Config [映射]",
         nav_sessions: "Sessions & Ledger [账本]",
@@ -1159,6 +1159,27 @@ export API_TIMEOUT_MS="2147483647"</pre>
         toast_ping_tip: "连通测试提示: ",
         toast_copied: "已复制到剪贴板",
         disabled_suffix: " - 未启用",
+        test_handshaking: "🟡 握手中...",
+        test_network_err: "🔴 网络中断",
+        test_pass_toast: "[{id}] 连通测试通过 · 延迟 {ms}ms",
+        test_notice_toast: "[{id}] 连通测试提示: {msg}",
+        modal_test_sending: "正在向该端点发送 1-Token 测试握手探测...",
+        modal_test_ok: "🟢 <strong>连接成功</strong> · 状态码 HTTP 200 · 真实网络延迟 <strong>{ms}ms</strong> · 端点完全可用！",
+        modal_test_fail: "🔴 <strong>连接失败</strong> · {msg}",
+        modal_test_err: "🔴 <strong>测试异常</strong> · 本地代理网络错误: {err}",
+        modal_fetch_querying: "正在向服务商查询当前 API Key 授权的可用模型池...",
+        modal_fetch_ok: "✓ <strong>成功拉取到 {n} 款可用模型</strong> · 已载入独立下拉列表与快捷标签",
+        modal_fetch_ok_toast: "成功拉取到 {n} 款模型",
+        modal_fetch_fail: "🔴 <strong>模型拉取失败</strong> · {msg}",
+        modal_fetch_err: "🔴 <strong>请求异常</strong> · 本地代理通信中断: {err}",
+        alert_fill_url: "请先填写接口地址 Base URL",
+        alert_fill_name: "请填写服务商名称",
+        toast_save_success: "服务商 [{name}] 已成功保存并生效！",
+        confirm_delete_provider: "确定删除此服务商渠道吗？",
+        toast_delete_success: "服务商渠道已成功删除！",
+        alert_save_fail: "保存配置失败，请检查网关运行状态",
+        toast_all_saved: "全部配置已成功保存并立即生效！",
+        toast_imported: "已成功挂载服务商渠道 [{name}]！",
         prov_desc: {
           prov_cerebras: "超高吞吐推理引擎 · 极速代码生成",
           prov_deepseek: "原厂顶级代码大模型 · 具备强悍系统级推理",
@@ -1172,7 +1193,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       en: {
-        brand_subtitle: "Server Control · v0.5.1",
+        brand_subtitle: "Server Control · v0.6.1",
         nav_providers: "Providers",
         nav_models: "Model Config",
         nav_sessions: "Sessions & Ledger",
@@ -1243,6 +1264,27 @@ export API_TIMEOUT_MS="2147483647"</pre>
         toast_ping_tip: "Connection test notice: ",
         toast_copied: "Copied to clipboard",
         disabled_suffix: " - Disabled",
+        test_handshaking: "🟡 Handshaking...",
+        test_network_err: "🔴 Network disconnected",
+        test_pass_toast: "[{id}] Connection passed · Latency {ms}ms",
+        test_notice_toast: "[{id}] Connection test notice: {msg}",
+        modal_test_sending: "Sending 1-Token probe handshake to the endpoint...",
+        modal_test_ok: "🟢 <strong>Connected</strong> · HTTP 200 OK · Latency <strong>{ms}ms</strong> · Endpoint ready!",
+        modal_test_fail: "🔴 <strong>Connection Failed</strong> · {msg}",
+        modal_test_err: "🔴 <strong>Test Error</strong> · Local proxy network error: {err}",
+        modal_fetch_querying: "Querying available model catalog from provider for this API Key...",
+        modal_fetch_ok: "✓ <strong>Successfully fetched {n} available models</strong> · Populated dropdown and pills",
+        modal_fetch_ok_toast: "Successfully fetched {n} models",
+        modal_fetch_fail: "🔴 <strong>Failed to fetch models</strong> · {msg}",
+        modal_fetch_err: "🔴 <strong>Request Error</strong> · Local proxy connection interrupted: {err}",
+        alert_fill_url: "Please enter the Base URL first",
+        alert_fill_name: "Please enter provider name",
+        toast_save_success: "Provider [{name}] saved and activated!",
+        confirm_delete_provider: "Are you sure you want to delete this provider channel?",
+        toast_delete_success: "Provider channel deleted successfully!",
+        alert_save_fail: "Failed to save configuration, please check gateway status",
+        toast_all_saved: "All configurations saved and activated!",
+        toast_imported: "Successfully imported provider channel [{name}]!",
         prov_desc: {
           prov_cerebras: "Ultra-high throughput inference engine · Blazing code generation",
           prov_deepseek: "Native flagship coding LLM · Robust system-level reasoning",
@@ -1256,7 +1298,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       ja: {
-        brand_subtitle: "サーバーコントロール · v0.5.1",
+        brand_subtitle: "サーバーコントロール · v0.6.1",
         nav_providers: "プロバイダー [Providers]",
         nav_models: "モデル設定 [Mapping]",
         nav_sessions: "セッション & 台帳 [Ledger]",
@@ -1327,6 +1369,27 @@ export API_TIMEOUT_MS="2147483647"</pre>
         toast_ping_tip: "接続テスト通知: ",
         toast_copied: "クリップボードにコピーしました",
         disabled_suffix: " - 無効",
+        test_handshaking: "🟡 ハンドシェイク中...",
+        test_network_err: "🔴 ネットワーク切断",
+        test_pass_toast: "[{id}] 接続テスト成功 · 遅延 {ms}ms",
+        test_notice_toast: "[{id}] 接続テスト通知: {msg}",
+        modal_test_sending: "エンドポイントへ1-Tokenハンドシェイク検証リクエストを送信中...",
+        modal_test_ok: "🟢 <strong>接続成功</strong> · HTTP 200 OK · 応答遅延 <strong>{ms}ms</strong> · 利用可能です！",
+        modal_test_fail: "🔴 <strong>接続失敗</strong> · {msg}",
+        modal_test_err: "🔴 <strong>テスト異常</strong> · ローカルプロキシ通信エラー: {err}",
+        modal_fetch_querying: "このAPIキーで利用可能なモデル一覧をプロバイダーへ照会中...",
+        modal_fetch_ok: "✓ <strong>利用可能な {n} 件のモデルを取得しました</strong> · ドロップダウンとタグに反映完了",
+        modal_fetch_ok_toast: "{n} 件のモデルを取得しました",
+        modal_fetch_fail: "🔴 <strong>モデル取得失敗</strong> · {msg}",
+        modal_fetch_err: "🔴 <strong>リクエスト異常</strong> · ローカルプロキシ通信中断: {err}",
+        alert_fill_url: "先にAPIベースURLを入力してください",
+        alert_fill_name: "プロバイダー名を入力してください",
+        toast_save_success: "プロバイダー [{name}] を保存し有効化しました！",
+        confirm_delete_provider: "このプロバイダーチャネルを削除してもよろしいですか？",
+        toast_delete_success: "プロバイダーチャネルを正常に削除しました！",
+        alert_save_fail: "設定の保存に失敗しました。ゲートウェイの状態を確認してください",
+        toast_all_saved: "すべての設定が正常に保存され、即時反映されました！",
+        toast_imported: "プロバイダーチャネル [{name}] のマウントに成功しました！",
         prov_desc: {
           prov_cerebras: "超高スループット推論エンジン · 高速コード生成",
           prov_deepseek: "公式フラグシップコーディングモデル · 強力な推論能力",
@@ -1340,7 +1403,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       ko: {
-        brand_subtitle: "서버 컨트롤 · v0.5.1",
+        brand_subtitle: "서버 컨트롤 · v0.6.1",
         nav_providers: "제공업체 [Providers]",
         nav_models: "모델 설정 [Mapping]",
         nav_sessions: "세션 & 원장 [Ledger]",
@@ -1411,6 +1474,27 @@ export API_TIMEOUT_MS="2147483647"</pre>
         toast_ping_tip: "연결 테스트 안내: ",
         toast_copied: "클립보드에 복사되었습니다",
         disabled_suffix: " - 비활성화",
+        test_handshaking: "🟡 연결 확인 중...",
+        test_network_err: "🔴 네트워크 연결 끊김",
+        test_pass_toast: "[{id}] 연결 테스트 통과 · 지연 시간 {ms}ms",
+        test_notice_toast: "[{id}] 연결 테스트 알림: {msg}",
+        modal_test_sending: "엔드포인트로 1-Token 검증 핸드셰이크 요청을 전송하는 중...",
+        modal_test_ok: "🟢 <strong>연결 성공</strong> · HTTP 200 OK · 응답 지연 <strong>{ms}ms</strong> · 즉시 사용 가능합니다!",
+        modal_test_fail: "🔴 <strong>연결 실패</strong> · {msg}",
+        modal_test_err: "🔴 <strong>테스트 오류</strong> · 로컬 프록시 통신 오류: {err}",
+        modal_fetch_querying: "현재 API 키로 사용 가능한 모델 카탈로그를 제공업체에 조회하는 중...",
+        modal_fetch_ok: "✓ <strong>사용 가능한 {n}개 모델 가져오기 완료</strong> · 드롭다운 및 태그에 반영 완료",
+        modal_fetch_ok_toast: "{n}개 모델을 가져왔습니다",
+        modal_fetch_fail: "🔴 <strong>모델 가져오기 실패</strong> · {msg}",
+        modal_fetch_err: "🔴 <strong>요청 오류</strong> · 로컬 프록시 연결 끊김: {err}",
+        alert_fill_url: "먼저 API 베이스 URL을 입력해 주세요",
+        alert_fill_name: "제공업체 이름을 입력해 주세요",
+        toast_save_success: "제공자 [{name}] 저장 및 활성화 완료!",
+        confirm_delete_provider: "이 제공자 채널을 삭제하시겠습니까?",
+        toast_delete_success: "제공자 채널이 성공적으로 삭제되었습니다!",
+        alert_save_fail: "설정 저장 실패, 게이트웨이 실행 상태를 확인하세요",
+        toast_all_saved: "모든 설정이 성공적으로 저장되어 즉시 적용되었습니다!",
+        toast_imported: "제공자 채널 [{name}] 마운트 완료!",
         prov_desc: {
           prov_cerebras: "초고속 처리량 추론 엔진 · 초고속 코드 생성",
           prov_deepseek: "최고 등급 코딩 모델 · 강력한 시스템 수준 추론",
@@ -1441,6 +1525,60 @@ export API_TIMEOUT_MS="2147483647"</pre>
         return I18N.zh[key];
       }
       return key;
+    }
+
+    function localizeTestMessage(msg) {
+      if (!msg) return t('modal_test_fail').replace('{msg}', 'Unknown error');
+      if (currentLang === 'zh') return msg;
+
+      let res = msg;
+      if (currentLang === 'en') {
+        res = res.replace(/401 密钥失效/g, '401 Unauthorized')
+                 .replace(/密钥无效或未授权/g, 'Invalid or unauthorized API key')
+                 .replace(/403 权限拒绝/g, '403 Forbidden')
+                 .replace(/访问被拒绝或需实名绑定/g, 'Access denied or billing verification required')
+                 .replace(/429 限流/g, '429 Rate Limit')
+                 .replace(/额度超限或触发频控/g, 'Quota exhausted or rate limit triggered')
+                 .replace(/404 Not Found: 模型不存在或端点路径错误/g, '404 Not Found: Model does not exist or incorrect endpoint URL')
+                 .replace(/410 已下架/g, '410 Retired')
+                 .replace(/目标模型已被服务商下架退休/g, 'Target model has been retired by provider')
+                 .replace(/400 Bad Request: 缺少有效 API 密钥或参数格式错误/g, '400 Bad Request: Missing API key or invalid format')
+                 .replace(/连接超时 \[6s 超时\]/g, 'Connection timeout [6s limit]')
+                 .replace(/拉取超时 \[8s 超时\]/g, 'Fetch timeout [8s limit]')
+                 .replace(/本地或目标端点未运行 \[连接被系统拒绝\]/g, 'Endpoint is not running [Connection refused]')
+                 .replace(/Base URL 不能为空/g, 'Base URL cannot be empty');
+      } else if (currentLang === 'ja') {
+        res = res.replace(/401 密钥失效/g, '401 認証失敗')
+                 .replace(/密钥无效或未授权/g, 'APIキーが無効または未認可です')
+                 .replace(/403 权限拒绝/g, '403 アクセス拒否')
+                 .replace(/访问被拒绝或需实名绑定/g, 'アクセス拒否または認証が必要です')
+                 .replace(/429 限流/g, '429 レート制限')
+                 .replace(/额度超限或触发频控/g, '利用枠超過または頻度制限です')
+                 .replace(/404 Not Found: 模型不存在或端点路径错误/g, '404 Not Found: モデルが存在しないかパスが無効です')
+                 .replace(/410 已下架/g, '410 提供終了')
+                 .replace(/目标模型已被服务商下架退休/g, '対象モデルはサービス提供終了となりました')
+                 .replace(/400 Bad Request: 缺少有效 API 密钥或参数格式错误/g, '400 Bad Request: APIキー欠落または不正な形式です')
+                 .replace(/连接超时 \[6s 超时\]/g, '接続タイムアウト [6秒超過]')
+                 .replace(/拉取超时 \[8s 超时\]/g, '取得タイムアウト [8秒超過]')
+                 .replace(/本地或目标端点未运行 \[连接被系统拒绝\]/g, 'エンドポイント未起動 [接続拒否]')
+                 .replace(/Base URL 不能为空/g, 'Base URLを空にすることはできません');
+      } else if (currentLang === 'ko') {
+        res = res.replace(/401 密钥失效/g, '401 인증 실패')
+                 .replace(/密钥无效或未授权/g, 'API 키가 유효하지 않거나 인증되지 않았습니다')
+                 .replace(/403 权限拒绝/g, '403 접근 거부')
+                 .replace(/访问被拒绝或需实名绑定/g, '접근이 거부되었거나 본인 확인이 필요합니다')
+                 .replace(/429 限流/g, '429 요청 제한')
+                 .replace(/额度超限或触发频控/g, '한도 초과 또는 빈도 제한입니다')
+                 .replace(/404 Not Found: 模型不存在或端点路径错误/g, '404 Not Found: 모델이 없거나 엔드포인트 경로 오류입니다')
+                 .replace(/410 已下架/g, '410 서비스 종료')
+                 .replace(/目标模型已被服务商下架退休/g, '대상 모델이 서비스 종료되었습니다')
+                 .replace(/400 Bad Request: 缺少有效 API 密钥或参数格式错误/g, '400 Bad Request: API 키 누락 또는 매개변수 오류입니다')
+                 .replace(/连接超时 \[6s 超时\]/g, '연결 시간 초과 [6초 초과]')
+                 .replace(/拉取超时 \[8s 超时\]/g, '가져오기 시간 초과 [8초 초과]')
+                 .replace(/本地或目标端点未运行 \[连接被系统拒绝\]/g, '엔드포인트 미실행 [연결 거부]')
+                 .replace(/Base URL 不能为空/g, 'Base URL은 비워둘 수 없습니다');
+      }
+      return res;
     }
 
     function switchLanguage(lang) {
@@ -1801,20 +1939,20 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const apiKey = document.getElementById('modal-input-key').value.trim();
 
       if (!baseUrl) {
-        alert('请先填写接口地址 Base URL');
+        alert(t('alert_fill_url'));
         document.getElementById('modal-input-url').focus();
         return;
       }
 
       if (btn) {
         btn.disabled = true;
-        btn.textContent = '🔄 正在拉取...';
+        btn.textContent = t('btn_fetching_models');
       }
 
       if (banner) {
         banner.style.display = 'block';
         banner.className = 'modal-test-banner testing';
-        banner.textContent = '正在向服务商查询当前 API Key 授权的可用模型池...';
+        banner.textContent = t('modal_fetch_querying');
       }
 
       try {
@@ -1844,25 +1982,26 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
           if (banner) {
             banner.className = 'modal-test-banner ok';
-            banner.innerHTML = `✓ <strong>成功拉取到 ${data.models.length} 款可用模型</strong> · 已载入独立下拉列表与快捷标签`;
+            banner.innerHTML = t('modal_fetch_ok').replace('{n}', data.models.length);
           }
-          showToast(`成功拉取到 ${data.models.length} 款模型`);
+          showToast(t('modal_fetch_ok_toast').replace('{n}', data.models.length));
           openModelDropdown();
         } else {
+          const locMsg = localizeTestMessage(data.message);
           if (banner) {
             banner.className = 'modal-test-banner err';
-            banner.innerHTML = `🔴 <strong>模型拉取失败</strong> · ${data.message || '未获取到模型列表'}`;
+            banner.innerHTML = t('modal_fetch_fail').replace('{msg}', locMsg);
           }
         }
       } catch (err) {
         if (banner) {
           banner.className = 'modal-test-banner err';
-          banner.innerHTML = `🔴 <strong>请求异常</strong> · 本地代理通信中断: ${err.message}`;
+          banner.innerHTML = t('modal_fetch_err').replace('{err}', err.message);
         }
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '🔄 拉取可用模型';
+          btn.textContent = t('btn_fetch_models');
         }
       }
     }
@@ -1898,7 +2037,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
       if (badge) {
         badge.style.display = 'inline-flex';
         badge.className = 'card-ping-badge testing';
-        badge.textContent = '🟡 握手中...';
+        badge.textContent = t('test_handshaking');
       }
 
       try {
@@ -1914,22 +2053,25 @@ export API_TIMEOUT_MS="2147483647"</pre>
             badge.className = 'card-ping-badge ok';
             badge.textContent = `🟢 200 OK · ${data.latencyMs}ms`;
           }
-          showToast(`[${providerId}] 连通测试通过 · 延迟 ${data.latencyMs}ms`);
+          const passMsg = t('test_pass_toast').replace('{id}', providerId).replace('{ms}', data.latencyMs);
+          showToast(passMsg);
         } else {
+          const locMsg = localizeTestMessage(data.message);
           if (badge) {
             badge.className = 'card-ping-badge err';
-            badge.textContent = `🔴 ${data.message || '连接失败'}`;
+            badge.textContent = `🔴 ${locMsg}`;
           }
-          showToast(`[${providerId}] 连通测试提示: ${data.message}`);
+          const noticeMsg = t('test_notice_toast').replace('{id}', providerId).replace('{msg}', locMsg);
+          showToast(noticeMsg);
         }
       } catch (err) {
         if (badge) {
           badge.className = 'card-ping-badge err';
-          badge.textContent = '🔴 网络中断';
+          badge.textContent = t('test_network_err');
         }
       } finally {
         btn.disabled = false;
-        btn.textContent = '⚡ Ping';
+        btn.textContent = t('card_btn_ping');
       }
     }
 
@@ -1943,20 +2085,20 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const model = document.getElementById('modal-input-model').value.trim();
 
       if (!baseUrl) {
-        alert('请先填写接口地址 Base URL');
+        alert(t('alert_fill_url'));
         document.getElementById('modal-input-url').focus();
         return;
       }
 
       if (btn) {
         btn.disabled = true;
-        btn.textContent = '测试中...';
+        btn.textContent = t('btn_testing');
       }
 
       if (banner) {
         banner.style.display = 'block';
         banner.className = 'modal-test-banner testing';
-        banner.textContent = '正在向该端点发送 1-Token 测试握手探测...';
+        banner.textContent = t('modal_test_sending');
       }
 
       try {
@@ -1976,23 +2118,24 @@ export API_TIMEOUT_MS="2147483647"</pre>
         if (data.success) {
           if (banner) {
             banner.className = 'modal-test-banner ok';
-            banner.innerHTML = `🟢 <strong>连接成功</strong> · 状态码 HTTP 200 · 真实网络延迟 <strong>${data.latencyMs}ms</strong> · 端点完全可用！`;
+            banner.innerHTML = t('modal_test_ok').replace('{ms}', data.latencyMs);
           }
         } else {
+          const locMsg = localizeTestMessage(data.message);
           if (banner) {
             banner.className = 'modal-test-banner err';
-            banner.innerHTML = `🔴 <strong>连接失败</strong> · ${data.message || '未知错误'}`;
+            banner.innerHTML = t('modal_test_fail').replace('{msg}', locMsg);
           }
         }
       } catch (err) {
         if (banner) {
           banner.className = 'modal-test-banner err';
-          banner.innerHTML = `🔴 <strong>测试异常</strong> · 本地代理网络错误: ${err.message}`;
+          banner.innerHTML = t('modal_test_err').replace('{err}', err.message);
         }
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '⚡ 测试连接';
+          btn.textContent = t('btn_test');
         }
       }
     }
@@ -2018,12 +2161,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const enabled = enabledInput.checked;
 
       if (!name) {
-        alert('请填写服务商名称');
+        alert(t('alert_fill_name'));
         nameInput.focus();
         return;
       }
       if (!baseUrl) {
-        alert('请填写接口地址 Base URL');
+        alert(t('alert_fill_url'));
         urlInput.focus();
         return;
       }
@@ -2067,21 +2210,22 @@ export API_TIMEOUT_MS="2147483647"</pre>
       renderModelSelects();
 
       // 立即自动持久化保存到本地后台，不需要用户额外去点 Apply 按钮
-      await autoSaveConfig(`服务商 [${name}] 已成功保存并生效！`);
+      const saveSuccessMsg = t('toast_save_success').replace('{name}', name);
+      await autoSaveConfig(saveSuccessMsg);
     }
 
     function deleteCurrentProvider() {
       if (!editingProviderId) return;
-      if (!confirm('确定删除此服务商渠道吗？')) return;
+      if (!confirm(t('confirm_delete_provider'))) return;
 
       currentConfig.providers = (currentConfig.providers || []).filter(p => p.id !== editingProviderId);
       closeModal();
       renderProviders();
       renderModelSelects();
-      autoSaveConfig('服务商渠道已成功删除！');
+      autoSaveConfig(t('toast_delete_success'));
     }
 
-    async function autoSaveConfig(successToastText = '配置已保存生效！') {
+    async function autoSaveConfig(successToastText = '') {
       const sonnetSelect = document.getElementById('select-sonnet');
       const haikuSelect = document.getElementById('select-haiku');
       if (sonnetSelect && sonnetSelect.value) currentConfig.sonnetProviderId = sonnetSelect.value;
@@ -2095,17 +2239,17 @@ export API_TIMEOUT_MS="2147483647"</pre>
         });
         if (res.ok) {
           markSaved();
-          showToast(successToastText);
+          showToast(successToastText || t('toast_saved'));
         }
       } catch (err) {
-        alert('保存配置失败，请检查网关运行状态');
+        alert(t('alert_save_fail'));
       }
     }
 
     async function applyChanges(showSuccessAlert = false) {
-      await autoSaveConfig('全部配置已成功保存并立即生效！');
+      await autoSaveConfig(t('toast_all_saved'));
       if (showSuccessAlert) {
-        alert('配置已成功保存并立即生效！');
+        alert(t('toast_all_saved'));
       }
     }
 
@@ -2157,7 +2301,8 @@ export API_TIMEOUT_MS="2147483647"</pre>
       if (urlParams.get('imported')) {
         const impName = urlParams.get('name') || '';
         window.history.replaceState({}, document.title, '/');
-        showToast(currentLang === 'zh' ? `已成功挂载服务商渠道 [${impName}]！` : `Successfully imported provider [${impName}]!`);
+        const impToast = t('toast_imported').replace('{name}', impName);
+        showToast(impToast);
         const found = (currentConfig.providers || []).find(p => p.name === impName);
         if (found) {
           setTimeout(() => {
