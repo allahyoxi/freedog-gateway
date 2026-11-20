@@ -240,6 +240,34 @@ const verJson = JSON.parse(versionCheckResult.body);
 assert(verJson.currentVersion, '必须包含 currentVersion 字段');
 console.log(`  ✓ 版本比对算法与自动化检查接口验证通过 [当前: v${getLocalVersion()}]`);
 
+// 测试 13: 验证单渠道多 API Key 密钥池提取、负载轮询与 429 自动熔断切换
+console.log('\n[Test 13] 验证单渠道多 API Key 密钥池提取、负载轮询与 429 自动熔断切换');
+const testRouter = gateway.router;
+
+// 1. 测试多行与逗号混合 Key 提取
+const extracted = testRouter.extractKeys({
+  apiKey: 'sk-key1, sk-key2\nsk-key3',
+  apiKeys: ['sk-key4', 'sk-key1']
+});
+assert.strictEqual(extracted.length, 4, '应去重并提取出 4 个有效 Key');
+assert.strictEqual(extracted[0], 'sk-key4');
+assert.strictEqual(extracted[1], 'sk-key1');
+assert.strictEqual(extracted[2], 'sk-key2');
+assert.strictEqual(extracted[3], 'sk-key3');
+
+// 2. 测试负载轮询 Round-Robin 算法
+const k1 = testRouter.selectKey('test_prov', extracted, 0);
+const k2 = testRouter.selectKey('test_prov', extracted, 0);
+assert(k1 !== k2 || extracted.length === 1, '多 Key 连续调用应进行轮询');
+
+// 3. 测试 429 触发冷却
+testRouter.markKeyCooldown(extracted[0], 60);
+assert.strictEqual(testRouter.isKeyCooled(extracted[0]), true, '冷却中的 Key 应判定为已冷却');
+const activeKeyAfterCooldown = testRouter.selectKey('test_prov', extracted, 0);
+assert.notStrictEqual(activeKeyAfterCooldown, extracted[0], '处于冷却期的 Key 不应被主轮询选中');
+
+console.log('  ✓ 多 API Key 密钥池解析、轮询调度与 429 熔断状态机验证通过');
+
 console.log('\n========================================================');
-console.log('🎉 全部 12 项核心网关机制、测速与自动化更新检测单测 100% 通过！');
+console.log('🎉 全部 13 项核心网关机制、测速与多Key密钥池调度单测 100% 通过！');
 console.log('========================================================\n');

@@ -203,6 +203,7 @@ export function createGatewayServer(options = {}) {
               testTarget = {
                 baseUrl: p.baseUrl,
                 apiKey: p.apiKey,
+                apiKeys: p.apiKeys,
                 model: p.model,
                 protocol: p.protocol
               };
@@ -231,6 +232,7 @@ export function createGatewayServer(options = {}) {
               testTarget = {
                 baseUrl: body.baseUrl || p.baseUrl,
                 apiKey: body.apiKey !== undefined ? body.apiKey : p.apiKey,
+                apiKeys: body.apiKeys !== undefined ? body.apiKeys : p.apiKeys,
                 protocol: body.protocol || p.protocol
               };
             }

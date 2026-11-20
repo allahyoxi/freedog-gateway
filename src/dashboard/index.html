@@ -931,6 +931,78 @@
     .btn-update-close:hover {
       color: #f85149;
     }
+
+    /* 多密钥池样式 */
+    .key-textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 68px;
+      max-height: 160px;
+    }
+    .key-textarea.masked-key {
+      -webkit-text-security: disc;
+    }
+    .key-count-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(56, 139, 253, 0.15);
+      color: #58a6ff;
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+    .key-count-tag.multi {
+      background: rgba(63, 185, 80, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+    .btn-toggle-eye {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-toggle-eye:hover {
+      color: var(--text-color);
+      border-color: #58a6ff;
+    }
+    .key-help-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+    .card-key-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      margin-top: 6px;
+      width: fit-content;
+    }
+    .card-key-pill.multi {
+      background: rgba(63, 185, 80, 0.12);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      font-weight: 600;
+    }
+    .card-key-pill.single {
+      background: rgba(56, 139, 253, 0.12);
+      color: #58a6ff;
+      border: 1px solid rgba(56, 139, 253, 0.3);
+    }
+    .card-key-pill.none {
+      background: rgba(139, 148, 158, 0.12);
+      color: #8b949e;
+      border: 1px solid rgba(139, 148, 158, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -945,7 +1017,7 @@
     <div class="brand">
       <h2>🐾 FreeDog Gateway</h2>
       <div style="display: flex; align-items: center; gap: 6px;">
-        <span data-i18n="brand_subtitle">Server Control · v0.6.1</span>
+        <span data-i18n="brand_subtitle">Server Control · v0.7.0</span>
         <span id="update-badge" class="update-badge" style="display: none;" onclick="focusUpdateBanner()">NEW</span>
       </div>
     </div>
@@ -1129,8 +1201,15 @@ export API_TIMEOUT_MS="2147483647"</pre>
       </div>
 
       <div class="form-group">
-        <label data-i18n="label_key">授权密钥 [API Key]</label>
-        <input type="password" id="modal-input-key" class="form-input" placeholder="sk-... [留空则免密或使用环境变量]">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="margin-bottom: 0;" data-i18n="label_key">授权密钥池 [API Keys]</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="modal-key-count-tag" class="key-count-tag" style="display: none;">0 Keys</span>
+            <button type="button" class="btn-toggle-eye" onclick="toggleKeyVisibility()" title="显隐密钥">👁️</button>
+          </div>
+        </div>
+        <textarea id="modal-input-key" class="form-input key-textarea masked-key" rows="3" placeholder="sk-... [支持每行一个 Key，多账号自动轮询与 429 故障转移]" oninput="updateKeyCountBadge(this.value)" autocomplete="off" spellcheck="false"></textarea>
+        <div class="key-help-hint" data-i18n="key_help_hint">💡 支持填写多个 Key [每行一个或逗号隔开]，网关将自动负载轮询并在 429 限流时毫秒级切换</div>
       </div>
 
       <div class="form-group" style="position: relative;">
@@ -1183,7 +1262,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
     const I18N = {
       zh: {
-        brand_subtitle: "网关服务控制台 · v0.6.1",
+        brand_subtitle: "网关服务控制台 · v0.7.0",
         nav_providers: "Providers [渠道]",
         nav_models: "Model Config [映射]",
         nav_sessions: "Sessions & Ledger [账本]",
@@ -1233,7 +1312,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
         modal_title_add: "添加自定义渠道",
         label_name: "服务商名称",
         label_url: "接口地址 [Base URL]",
-        label_key: "授权密钥 [API Key]",
+        label_key: "授权密钥池 [API Keys]",
+        key_help_hint: "💡 支持填写多个 Key [每行一个或逗号隔开]，网关将自动负载轮询并在 429 限流时毫秒级切换",
+        key_count_single: "1 个密钥",
+        key_count_multi: "{n} 个密钥 · 自动轮询",
+        card_key_rr: "自动轮询",
+        card_key_none: "免密 / 环境变量",
         label_model: "默认目标模型标识 [Model ID]",
         btn_fetch_models: "🔄 拉取可用模型",
         btn_fetching_models: "🔄 正在拉取...",
@@ -1247,7 +1331,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         btn_testing: "测试中...",
         btn_save: "确定",
         placeholder_name: "例如: 硅基流动 / 深度求索 / 局域网反代",
-        placeholder_key: "sk-... [留空则免密或使用环境变量]",
+        placeholder_key: "sk-... [支持每行一个 Key，多账号自动轮询与 429 故障转移]",
         placeholder_model: "例如: deepseek-ai/DeepSeek-V3",
         toast_saved: "配置已成功保存并立即生效！",
         toast_ping_pass: "连通测试通过",
@@ -1292,7 +1376,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       en: {
-        brand_subtitle: "Server Control · v0.6.1",
+        brand_subtitle: "Server Control · v0.7.0",
         nav_providers: "Providers",
         nav_models: "Model Config",
         nav_sessions: "Sessions & Ledger",
@@ -1342,7 +1426,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
         modal_title_add: "Add Custom Provider",
         label_name: "Provider Name",
         label_url: "Base URL",
-        label_key: "API Key",
+        label_key: "API Key Pool [API Keys]",
+        key_help_hint: "💡 Supports multiple keys [one per line or comma-separated]. Gateway will auto round-robin and switch on 429",
+        key_count_single: "1 Key",
+        key_count_multi: "{n} Keys · Round-Robin",
+        card_key_rr: "Round-Robin",
+        card_key_none: "No Key / Env",
         label_model: "Target Model ID",
         btn_fetch_models: "🔄 Fetch Models",
         btn_fetching_models: "🔄 Fetching...",
@@ -1356,7 +1445,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         btn_testing: "Testing...",
         btn_save: "Save",
         placeholder_name: "e.g. SiliconFlow / DeepSeek / Local Ollama",
-        placeholder_key: "sk-... [Leave empty for keyless or env vars]",
+        placeholder_key: "sk-... [One key per line, auto round-robin and 429 failover]",
         placeholder_model: "e.g. deepseek-ai/DeepSeek-V3",
         toast_saved: "Configuration applied and saved to disk!",
         toast_ping_pass: "Connection test passed",
@@ -1401,7 +1490,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       ja: {
-        brand_subtitle: "サーバーコントロール · v0.6.1",
+        brand_subtitle: "サーバーコントロール · v0.7.0",
         nav_providers: "プロバイダー [Providers]",
         nav_models: "モデル設定 [Mapping]",
         nav_sessions: "セッション & 台帳 [Ledger]",
@@ -1451,7 +1540,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
         modal_title_add: "カスタムプロバイダー追加",
         label_name: "プロバイダー名",
         label_url: "APIベースURL [Base URL]",
-        label_key: "APIキー [API Key]",
+        label_key: "API キープール [API Keys]",
+        key_help_hint: "💡 複数のKeyに対応 [1行に1つまたはカンマ区切り]。自動ローテーションと429時の即時切替",
+        key_count_single: "1 Key",
+        key_count_multi: "{n} Keys · 自動切替",
+        card_key_rr: "自動切替",
+        card_key_none: "キーなし / 環境変数",
         label_model: "デフォルトモデルID [Model ID]",
         btn_fetch_models: "🔄 モデル取得",
         btn_fetching_models: "🔄 取得中...",
@@ -1465,7 +1559,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         btn_testing: "テスト中...",
         btn_save: "保存",
         placeholder_name: "例: SiliconFlow / DeepSeek / ローカルOllama",
-        placeholder_key: "sk-... [空欄で環境変数または認証なし]",
+        placeholder_key: "sk-... [1行に1つのKey、自動ローテーションと429時の即時切替に対応]",
         placeholder_model: "例: deepseek-ai/DeepSeek-V3",
         toast_saved: "設定が適用されディスクに保存されました！",
         toast_ping_pass: "接続テスト成功",
@@ -1510,7 +1604,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         }
       },
       ko: {
-        brand_subtitle: "서버 컨트롤 · v0.6.1",
+        brand_subtitle: "서버 컨트롤 · v0.7.0",
         nav_providers: "제공업체 [Providers]",
         nav_models: "모델 설정 [Mapping]",
         nav_sessions: "세션 & 원장 [Ledger]",
@@ -1560,7 +1654,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
         modal_title_add: "커스텀 제공업체 추가",
         label_name: "제공업체 이름",
         label_url: "API 베이스 URL [Base URL]",
-        label_key: "API 키 [API Key]",
+        label_key: "API 키 풀 [API Keys]",
+        key_help_hint: "💡 여러 Key 지원 [줄바꿈 또는 쉼표 구분]. 자동 라운드로빈 및 429 발생 시 즉시 전환",
+        key_count_single: "1 Key",
+        key_count_multi: "{n} Keys · 라운드로빈",
+        card_key_rr: "라운드로빈",
+        card_key_none: "키 없음 / 환경변수",
         label_model: "기본 대상 모델 ID [Model ID]",
         btn_fetch_models: "🔄 모델 가져오기",
         btn_fetching_models: "🔄 가져오는 중...",
@@ -1574,7 +1673,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
         btn_testing: "테스트 중...",
         btn_save: "확인",
         placeholder_name: "예: SiliconFlow / DeepSeek / 로컬 Ollama",
-        placeholder_key: "sk-... [환경 변수 또는 비밀번호 없음 사용 시 비워둠]",
+        placeholder_key: "sk-... [줄당 1개 Key 지원, 자동 라운드로빈 및 429 장애 조치]",
         placeholder_model: "예: deepseek-ai/DeepSeek-V3",
         toast_saved: "설정이 적용되어 디스크에 저장되었습니다!",
         toast_ping_pass: "연결 테스트 통과",
@@ -1794,12 +1893,25 @@ export API_TIMEOUT_MS="2147483647"</pre>
       grid.innerHTML = '';
 
       (currentConfig.providers || []).forEach(p => {
-        const isConfigured = Boolean(p.apiKey || p.name === 'Local Ollama' || p.enabled);
+        const keys = (Array.isArray(p.apiKeys) && p.apiKeys.length > 0)
+          ? p.apiKeys
+          : (p.apiKey ? p.apiKey.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean) : []);
+
+        const isConfigured = Boolean(keys.length > 0 || p.name === 'Local Ollama' || p.enabled);
         const card = document.createElement('div');
         card.className = 'provider-card' + (p.enabled ? ' enabled' : '');
         
         const localizedDesc = (I18N[currentLang] && I18N[currentLang].prov_desc && I18N[currentLang].prov_desc[p.id]) || p.description || p.baseUrl;
         const statusText = p.enabled ? t('card_active') : (isConfigured ? t('card_configured') : t('card_unconfigured'));
+
+        let keyBadgeHtml = '';
+        if (keys.length > 1) {
+          keyBadgeHtml = `<span class="card-key-pill multi">🔑 ${keys.length} Keys · ${t('card_key_rr')}</span>`;
+        } else if (keys.length === 1) {
+          keyBadgeHtml = `<span class="card-key-pill single">🔑 1 Key</span>`;
+        } else if (p.name !== 'Local Ollama') {
+          keyBadgeHtml = `<span class="card-key-pill none">${t('card_key_none')}</span>`;
+        }
 
         card.innerHTML = `
           <div>
@@ -1812,7 +1924,10 @@ export API_TIMEOUT_MS="2147483647"</pre>
               </span>
             </div>
             <div class="provider-desc">${localizedDesc}</div>
-            <div id="ping-badge-${p.id}"></div>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px;">
+              ${keyBadgeHtml}
+              <div id="ping-badge-${p.id}"></div>
+            </div>
           </div>
           <div class="provider-footer">
             <span class="models-count">${p.model || t('card_models_unassigned')}</span>
@@ -1870,6 +1985,30 @@ export API_TIMEOUT_MS="2147483647"</pre>
       }
     }
 
+    function updateKeyCountBadge(val = '') {
+      const tag = document.getElementById('modal-key-count-tag');
+      if (!tag) return;
+      const keys = (val || '').split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      if (keys.length === 0) {
+        tag.style.display = 'none';
+      } else if (keys.length === 1) {
+        tag.style.display = 'inline-block';
+        tag.className = 'key-count-tag';
+        tag.textContent = t('key_count_single');
+      } else {
+        tag.style.display = 'inline-block';
+        tag.className = 'key-count-tag multi';
+        tag.textContent = t('key_count_multi').replace('{n}', keys.length);
+      }
+    }
+
+    function toggleKeyVisibility() {
+      const textarea = document.getElementById('modal-input-key');
+      if (textarea) {
+        textarea.classList.toggle('masked-key');
+      }
+    }
+
     function openEditModal(providerId) {
       editingProviderId = providerId;
       resetModalTestBanner();
@@ -1883,8 +2022,12 @@ export API_TIMEOUT_MS="2147483647"</pre>
       document.getElementById('modal-input-url').value = p.baseUrl || '';
       document.getElementById('modal-input-url').placeholder = 'https://api.openai.com/v1';
 
-      document.getElementById('modal-input-key').value = p.apiKey || '';
+      const keyVal = Array.isArray(p.apiKeys) && p.apiKeys.length > 0
+        ? p.apiKeys.join('\n')
+        : (p.apiKey || '');
+      document.getElementById('modal-input-key').value = keyVal;
       document.getElementById('modal-input-key').placeholder = t('placeholder_key');
+      updateKeyCountBadge(keyVal);
 
       document.getElementById('modal-input-model').value = p.model || '';
       document.getElementById('modal-input-model').placeholder = t('placeholder_model');
@@ -1911,6 +2054,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       document.getElementById('modal-input-key').value = '';
       document.getElementById('modal-input-key').placeholder = t('placeholder_key');
+      updateKeyCountBadge('');
 
       document.getElementById('modal-input-model').value = '';
       document.getElementById('modal-input-model').placeholder = t('placeholder_model');
@@ -2051,7 +2195,9 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const btn = document.getElementById('btn-fetch-models');
       const banner = document.getElementById('modal-test-banner');
       const baseUrl = document.getElementById('modal-input-url').value.trim();
-      const apiKey = document.getElementById('modal-input-key').value.trim();
+      const rawKeyText = document.getElementById('modal-input-key').value;
+      const rawKeys = rawKeyText.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      const apiKey = rawKeys[0] || '';
 
       if (!baseUrl) {
         alert(t('alert_fill_url'));
@@ -2078,6 +2224,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
             providerId: editingProviderId,
             baseUrl,
             apiKey,
+            apiKeys: rawKeys,
             protocol: 'openai'
           })
         });
@@ -2196,7 +2343,9 @@ export API_TIMEOUT_MS="2147483647"</pre>
       const banner = document.getElementById('modal-test-banner');
       const name = document.getElementById('modal-input-name').value.trim();
       const baseUrl = document.getElementById('modal-input-url').value.trim();
-      const apiKey = document.getElementById('modal-input-key').value.trim();
+      const rawKeyText = document.getElementById('modal-input-key').value;
+      const rawKeys = rawKeyText.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      const apiKey = rawKeys[0] || '';
       const model = document.getElementById('modal-input-model').value.trim();
 
       if (!baseUrl) {
@@ -2224,6 +2373,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
             name,
             baseUrl,
             apiKey,
+            apiKeys: rawKeys,
             model: model || 'default-model',
             protocol: 'openai'
           })
@@ -2271,7 +2421,9 @@ export API_TIMEOUT_MS="2147483647"</pre>
 
       const name = nameInput.value.trim();
       const baseUrl = urlInput.value.trim();
-      const apiKey = keyInput.value.trim();
+      const rawKeys = keyInput.value.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      const apiKey = rawKeys[0] || '';
+      const apiKeys = rawKeys;
       const model = modelInput.value.trim();
       const enabled = enabledInput.checked;
 
@@ -2298,6 +2450,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
           p.name = name;
           p.baseUrl = baseUrl;
           p.apiKey = apiKey;
+          p.apiKeys = apiKeys;
           p.model = finalModel;
           p.enabled = enabled;
           if (modalFetchedModels && modalFetchedModels.length > 0) {
@@ -2313,6 +2466,7 @@ export API_TIMEOUT_MS="2147483647"</pre>
           enabled,
           baseUrl,
           apiKey,
+          apiKeys,
           model: finalModel,
           models: modalFetchedModels && modalFetchedModels.length > 0 ? modalFetchedModels : [finalModel],
           protocol: 'openai',

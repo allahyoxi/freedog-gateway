@@ -4,6 +4,66 @@ export class UpstreamRouter {
     this.configManager = options.configManager || null;
     this.customKeys = options.keys || {};
     this.retryLimit = options.retryLimit || 3;
+    this.keyIndexMap = new Map();
+    this.keyCooldownMap = new Map();
+  }
+
+  // 提取渠道绑定的所有有效密钥列表
+  extractKeys(provider) {
+    if (!provider) return [];
+    const keys = [];
+    if (Array.isArray(provider.apiKeys)) {
+      for (const k of provider.apiKeys) {
+        if (typeof k === 'string' && k.trim()) keys.push(k.trim());
+      }
+    }
+    if (typeof provider.apiKey === 'string' && provider.apiKey.trim()) {
+      const parts = provider.apiKey.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      for (const p of parts) {
+        if (!keys.includes(p)) keys.push(p);
+      }
+    }
+    if (keys.length === 0 && provider.name) {
+      const envKey = process.env[`${provider.name.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_API_KEY`];
+      if (envKey) keys.push(envKey.trim());
+    }
+    return keys;
+  }
+
+  markKeyCooldown(key, cooldownSeconds = 60) {
+    if (!key) return;
+    this.keyCooldownMap.set(key, Date.now() + cooldownSeconds * 1000);
+  }
+
+  isKeyCooled(key) {
+    if (!key) return false;
+    const expiry = this.keyCooldownMap.get(key);
+    if (!expiry) return false;
+    if (Date.now() > expiry) {
+      this.keyCooldownMap.delete(key);
+      return false;
+    }
+    return true;
+  }
+
+  // 负载轮询与可用密钥选择算法
+  selectKey(providerId, keys, attemptIndex = 0) {
+    if (!keys || keys.length === 0) return '';
+    if (keys.length === 1) return keys[0];
+
+    // 过滤未在冷却期的密钥
+    const activeKeys = keys.filter(k => !this.isKeyCooled(k));
+    const pool = activeKeys.length > 0 ? activeKeys : keys;
+
+    const baseIdx = this.keyIndexMap.get(providerId) || 0;
+    const chosenIdx = (baseIdx + attemptIndex) % pool.length;
+
+    // 如果是首轮尝试，推进轮询游标
+    if (attemptIndex === 0) {
+      this.keyIndexMap.set(providerId, (baseIdx + 1) % pool.length);
+    }
+
+    return pool[chosenIdx];
   }
 
   setKey(provider, key) {
@@ -17,11 +77,19 @@ export class UpstreamRouter {
     }
   }
 
-  getAvailableKey(provider, configuredKey = '') {
-    if (configuredKey && configuredKey.trim()) {
-      return configuredKey.trim();
+  getAvailableKey(provider, configuredKey = '', apiKeys = []) {
+    const keys = [];
+    if (Array.isArray(apiKeys)) {
+      keys.push(...apiKeys.filter(k => typeof k === 'string' && k.trim()));
     }
-    const envKey = process.env[`${provider.toUpperCase()}_API_KEY`];
+    if (configuredKey && configuredKey.trim()) {
+      const parts = configuredKey.split(/[\n,;]+/).map(k => k.trim()).filter(Boolean);
+      for (const p of parts) if (!keys.includes(p)) keys.push(p);
+    }
+    if (keys.length > 0) {
+      return this.selectKey(provider, keys, 0);
+    }
+    const envKey = process.env[`${provider.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_API_KEY`];
     if (envKey) return envKey;
 
     const list = this.customKeys[provider] || [];
@@ -41,13 +109,15 @@ export class UpstreamRouter {
       // 1. 首选激活的 Provider
       const primary = (config.providers || []).find(p => p.id === targetId && p.enabled);
       if (primary) {
+        const keys = this.extractKeys(primary);
         candidates.push({
           id: primary.id,
           providerName: primary.name,
           targetModel: primary.model,
           baseUrl: primary.baseUrl,
           protocol: primary.protocol || 'openai',
-          apiKey: this.getAvailableKey(primary.name, primary.apiKey),
+          apiKeys: keys,
+          apiKey: keys[0] || '',
           isCustom: true
         });
         addedIds.add(primary.id);
@@ -56,13 +126,15 @@ export class UpstreamRouter {
       // 2. 其他已启用的备用 Providers [用于 Failover 容灾备份]
       (config.providers || []).forEach(p => {
         if (p.enabled && !addedIds.has(p.id)) {
+          const keys = this.extractKeys(p);
           candidates.push({
             id: p.id,
             providerName: p.name,
             targetModel: p.model,
             baseUrl: p.baseUrl,
             protocol: p.protocol || 'openai',
-            apiKey: this.getAvailableKey(p.name, p.apiKey),
+            apiKeys: keys,
+            apiKey: keys[0] || '',
             isCustom: true
           });
           addedIds.add(p.id);
@@ -82,6 +154,7 @@ export class UpstreamRouter {
       targetModel,
       baseUrl,
       protocol: 'openai',
+      apiKeys: [this.getAvailableKey(providerName)].filter(Boolean),
       apiKey: this.getAvailableKey(providerName),
       isCustom: false
     });
@@ -95,7 +168,7 @@ export class UpstreamRouter {
     return list[0];
   }
 
-  // 执行上游代理请求并自动支持 429/5xx 故障转移
+  // 执行上游代理请求并自动支持多 Key 轮询与 429/5xx 故障转移
   async dispatch(openAIPayload, options = {}) {
     const candidates = this.resolveCandidates(options.requestedModel);
     let lastError = null;
@@ -107,59 +180,84 @@ export class UpstreamRouter {
 
     for (let i = 0; i < maxAttempts; i++) {
       const target = candidates[i];
-      const payload = {
-        ...openAIPayload,
-        model: target.targetModel
-      };
+      const targetKeys = target.apiKeys && target.apiKeys.length > 0
+        ? target.apiKeys
+        : (target.apiKey ? [target.apiKey] : ['']);
 
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      if (target.apiKey) {
-        headers['Authorization'] = `Bearer ${target.apiKey}`;
+      const keyAttempts = Math.min(targetKeys.length, 3);
+
+      for (let k = 0; k < keyAttempts; k++) {
+        const activeKey = this.selectKey(target.id, targetKeys, k);
+        const payload = {
+          ...openAIPayload,
+          model: target.targetModel
+        };
+
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        if (activeKey) {
+          headers['Authorization'] = `Bearer ${activeKey}`;
+        }
+
+        const endpoint = `${target.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+
+          lastRes = res;
+          lastRoute = { name: target.providerName, provider: target.providerName };
+          lastModel = target.targetModel;
+
+          // 如果请求成功，或者属于客户端正常请求错误 [400, 404 等]，直接返回无需 failover
+          if (res.ok || (res.status >= 400 && res.status < 429)) {
+            return {
+              response: res,
+              route: lastRoute,
+              targetModel: lastModel
+            };
+          }
+
+          // 如果触发了 429 限流且同渠道还有备用 Key
+          if (res.status === 429) {
+            this.markKeyCooldown(activeKey, 60);
+            if (k < keyAttempts - 1) {
+              console.warn(`[Key Failover] 渠道 [${target.providerName}] 密钥 #${k + 1} 触发 HTTP 429 限流，正在自动切换至同渠道备用密钥 #${k + 2} 重试...`);
+              continue;
+            }
+          }
+
+          // 其它 5xx 故障，若同渠道有多个 Key 则可重试，否则退出 Key 循环进入渠道级 Failover
+          if (res.status >= 500 && k < keyAttempts - 1) {
+            continue;
+          }
+
+          break;
+        } catch (err) {
+          lastError = err;
+          if (k < keyAttempts - 1) {
+            continue;
+          }
+        }
       }
 
-      const endpoint = `${target.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+      // 如果当前渠道全部 Key 均失败或触发 429/5xx，且还有候选渠道，自动进行渠道级故障转移
+      if (i < maxAttempts - 1 && (lastRes?.status === 429 || lastRes?.status >= 500 || lastError)) {
+        const nextTarget = candidates[i + 1];
+        console.warn(`[Failover] 渠道 [${target.providerName}] 全部密钥或连接不可用，正在自动无缝切换至备用渠道 [${nextTarget.providerName}]...`);
+        continue;
+      }
 
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-
-        lastRes = res;
-        lastRoute = { name: target.providerName, provider: target.providerName };
-        lastModel = target.targetModel;
-
-        // 如果请求成功，或者属于客户端正常请求错误 [400, 404 等]，直接返回无需 failover
-        if (res.ok || (res.status >= 400 && res.status < 429)) {
-          return {
-            response: res,
-            route: lastRoute,
-            targetModel: lastModel
-          };
-        }
-
-        // 如果触发了 429 限流或 5xx 故障，且还有候选渠道，自动故障转移
-        if (i < maxAttempts - 1 && (res.status === 429 || res.status >= 500)) {
-          const nextTarget = candidates[i + 1];
-          console.warn(`[Failover] 渠道 [${target.providerName}] 响应 HTTP ${res.status}，正在自动无缝切换至备用渠道 [${nextTarget.providerName}]...`);
-          continue;
-        }
-
+      if (lastRes) {
         return {
-          response: res,
+          response: lastRes,
           route: lastRoute,
           targetModel: lastModel
         };
-      } catch (err) {
-        lastError = err;
-        if (i < maxAttempts - 1) {
-          const nextTarget = candidates[i + 1];
-          console.warn(`[Failover] 渠道 [${target.providerName}] 网络连接中断 (${err.message})，正在自动无缝切换至备用渠道 [${nextTarget.providerName}]...`);
-          continue;
-        }
       }
     }
 
@@ -178,7 +276,8 @@ export class UpstreamRouter {
   async testConnection(options = {}) {
     const startTime = Date.now();
     const baseUrl = (options.baseUrl || '').replace(/\/+$/, '');
-    const apiKey = (options.apiKey || '').trim();
+    const keys = this.extractKeys(options);
+    const apiKey = keys[0] || (options.apiKey || '').trim();
     const model = (options.model || 'default-model').trim();
 
     if (!baseUrl) {
@@ -328,7 +427,8 @@ export class UpstreamRouter {
   // 向上游服务商查询并动态拉取当前 API Key 可用的模型列表
   async fetchModels(options = {}) {
     const baseUrl = (options.baseUrl || '').replace(/\/+$/, '');
-    const apiKey = (options.apiKey || '').trim();
+    const keys = this.extractKeys(options);
+    const apiKey = keys[0] || (options.apiKey || '').trim();
     const protocol = options.protocol || 'openai';
 
     if (!baseUrl) {
